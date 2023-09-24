@@ -7,6 +7,7 @@ in vec2 tex_coords;
 in vec4 joints;
 in vec4 weights;
 
+uniform mat4 nodeMatrix;
 uniform mat4 mvp;
 
 uniform jointsMats {
@@ -31,7 +32,7 @@ void main() {
         final_position += weights[i] * (boneTransform * vec4(position, 1.0));
     }*/
 
-    gl_Position = mvp * skinMat * vec4(position, 1.0);
+    gl_Position = mvp /* skinMat * nodeMatrix */ * vec4(position, 1.0);
     //gl_Position = mvp * final_position;
     v_tex_coords = tex_coords;
 }
