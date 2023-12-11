@@ -3,11 +3,13 @@
 const int MAX_JOINTS = 128;
 
 in vec3 position;
+in vec3 normal;
 in vec2 tex_coords;
 in vec4 joints;
 in vec4 weights;
 
 uniform mat4 mvp;
+uniform mat4 model;
 
 uniform jointsMats {
     mat4 jointsMatsArr[MAX_JOINTS];
@@ -18,6 +20,8 @@ uniform jointsInverseBindMats {
 };
 
 out vec2 v_tex_coords;
+out vec3 v_normal;
+out vec3 v_frag_pos;
 
 void main() {
      if (joints.x == 0 && joints.y == 0 && joints.z == 0 && joints.w == 0) {
@@ -33,4 +37,6 @@ void main() {
     }
 
     v_tex_coords = tex_coords;
+    v_normal = normal;
+    v_frag_pos = vec3(model * vec4(position, 1.0));
 }

@@ -1,0 +1,18 @@
+fn start() {
+	log("yo")
+}
+
+fn update() {
+}
+
+fn render() {
+
+}
+
+
+fn call_list() -> CallList {
+    return {
+        immut_call: ["test_call"],
+	mut_call: []
+    }
+}
