@@ -32,7 +32,7 @@
 			"extensions":{
 				"KHR_materials_unlit":{}
 			},
-			"name":"Material.003",
+			"name":"Material.002",
 			"pbrMetallicRoughness":{
 				"baseColorTexture":{
 					"index":0
@@ -46,7 +46,7 @@
 			"extensions":{
 				"KHR_materials_unlit":{}
 			},
-			"name":"Material.004",
+			"name":"Material.001",
 			"pbrMetallicRoughness":{
 				"baseColorTexture":{
 					"index":1
@@ -58,7 +58,7 @@
 	],
 	"meshes":[
 		{
-			"name":"Cube.001",
+			"name":"Cube.002",
 			"primitives":[
 				{
 					"attributes":{
@@ -72,7 +72,7 @@
 			]
 		},
 		{
-			"name":"Cube.003",
+			"name":"Cube.004",
 			"primitives":[
 				{
 					"attributes":{
@@ -109,14 +109,14 @@
 			"componentType":5126,
 			"count":492,
 			"max":[
-				0.2166902869939804,
+				0.22316421568393707,
 				0.12080129981040955,
-				0.09577581286430359
+				0.10931622982025146
 			],
 			"min":[
-				-0.1362217366695404,
+				-0.13938620686531067,
 				-1.284034013748169,
-				-0.053545087575912476
+				-0.07594996690750122
 			],
 			"type":"VEC3"
 		},
@@ -143,14 +143,14 @@
 			"componentType":5126,
 			"count":184,
 			"max":[
-				0.12226763367652893,
+				0.12226764857769012,
 				1.5259982347488403,
 				0.043482858687639236
 			],
 			"min":[
-				-0.15153394639492035,
+				-0.15153396129608154,
 				0.11242970824241638,
-				-0.0012521781027317047
+				-0.001252179965376854
 			],
 			"type":"VEC3"
 		},
@@ -232,7 +232,7 @@
 	"buffers":[
 		{
 			"byteLength":29132,
-			"uri":"knife_test.bin"
+			"uri":"untitled.bin"
 		}
 	]
 }
