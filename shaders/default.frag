@@ -16,6 +16,31 @@ out vec4 color;
 
 float ClosestShadowCalculation(vec4 fragPosLightSpace)
 {
+    vec2 texelSize = 1.0 / textureSize(closestShadowTexture, 0);
+    // perform perspective divide
+    vec3 projCoords = v_closest_light_frag_pos.xyz / v_closest_light_frag_pos.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+    float closestDepth = texture(closestShadowTexture, projCoords.xy).r; 
+    // get depth of current fragment from light's perspective
+    float currentDepth = projCoords.z;
+    // check whether current frag pos is in shadow
+    float shadow = 0;//currentDepth > closestDepth  ? 1.0 : 0.0;
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float bias = 0.001;
+            float pcfDepth = texture(closestShadowTexture, projCoords.xy + vec2(x, y) * texelSize).r; 
+            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
+        }    
+    }
+    shadow /= 15.0;
+    return shadow;
+}
+/*
+{
     // perform perspective divide
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     // transform to [0,1] range
@@ -24,50 +49,38 @@ float ClosestShadowCalculation(vec4 fragPosLightSpace)
     float closestDepth = texture(closestShadowTexture, projCoords.xy).r; 
     // get depth of current fragment from light's perspective
     float currentDepth = projCoords.z;
-    // check whether current frag pos is in shadow
-    float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
 
-    float bias = 0.005;
-    vec2 texelSize = 1.0 / textureSize(closestShadowTexture, 0);
-    for(int x = -2; x <= 2; ++x)
-    {
-        for(int y = -2; y <= 2; ++y)
-        {
-            float pcfDepth = texture(closestShadowTexture, v_closest_light_frag_pos.xy + vec2(x, y) * texelSize).r; 
-            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
-        }    
-    }
-    shadow /= 9.0;
+    float bias = 0.0008;
+    // check whether current frag pos is in shadow
+    float shadow = currentDepth > closestDepth + bias ? 1.0 : 0.0;
+    
 
     return shadow;
 }  
+*/
 
 float FurthestShadowCalculation(vec4 fragPosLightSpace) {
+    vec2 texelSize = 1.0 / textureSize(furthestShadowTexture, 0);
     // perform perspective divide
-    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    vec3 projCoords = v_furthest_light_frag_pos.xyz / v_furthest_light_frag_pos.w;
     // transform to [0,1] range
     projCoords = projCoords * 0.5 + 0.5;
-    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
-    float closestDepth = texture(furthestShadowTexture, projCoords.xy).r; 
+    // get furthest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+    float furthestDepth = texture(furthestShadowTexture, projCoords.xy).r; 
     // get depth of current fragment from light's perspective
     float currentDepth = projCoords.z;
     // check whether current frag pos is in shadow
-    float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
-
-/*
-    float bias = 0.005;
-    vec2 texelSize = 1.0 / textureSize(furthestShadowTexture, 0);
-    for(int x = -2; x <= 2; ++x)
+    float shadow = 0;//currentDepth > furthestDepth  ? 1.0 : 0.0;
+    for(int x = -1; x <= 1; ++x)
     {
-        for(int y = -2; y <= 2; ++y)
+        for(int y = -1; y <= 1; ++y)
         {
-            float pcfDepth = texture(furthestShadowTexture, v_furthest_light_frag_pos.xy + vec2(x, y) * texelSize).r; 
+            float bias = 0.001;
+            float pcfDepth = texture(furthestShadowTexture, projCoords.xy + vec2(x, y) * texelSize).r; 
             shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
         }    
     }
-    shadow /= 9.0;
-    */
-
+    shadow /= 15.0;
     return shadow;
 }
 
@@ -84,7 +97,7 @@ void main() {
 
     vec4 object_color = texture(tex, v_tex_coords);
 
-    //vec3 cel_shaded = floor((diffuse) * 4) / 4;
+    vec3 cel_shaded = floor((diffuse) * 4) / 4;
 
 
     //shadow mapping
@@ -96,6 +109,6 @@ void main() {
     }
 
 
-    vec3 lighting = /*visibility * */((ambientColor - shadow) * diffuse) * vec3(object_color);
+    vec3 lighting = /*visibility * */((ambientColor - shadow) * /*diffuse*/cel_shaded) * vec3(object_color);
     color = vec4(lighting, 1.0);
 }
