@@ -36,7 +36,7 @@ float ClosestShadowCalculation(vec4 fragPosLightSpace)
             shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
         }    
     }
-    shadow /= 15.0;
+    shadow /= 100.0;
     return shadow;
 }
 /*
@@ -80,13 +80,13 @@ float FurthestShadowCalculation(vec4 fragPosLightSpace) {
             shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
         }    
     }
-    shadow /= 15.0;
+    shadow /= 100.0;
     return shadow;
 }
 
 void main() {
     vec3 lightColor = vec3(1.0, 1.0, 1.0);
-    float ambient = 0.1;
+    float ambient = 0.15;
     vec3 ambientColor = ambient * lightColor;
 
     vec3 norm = normalize(v_normal);
@@ -97,7 +97,7 @@ void main() {
 
     vec4 object_color = texture(tex, v_tex_coords);
 
-    vec3 cel_shaded = floor((diffuse) * 4) / 4;
+    //vec3 cel_shaded = floor((diffuse) * 4) / 4;
 
 
     //shadow mapping
@@ -109,6 +109,6 @@ void main() {
     }
 
 
-    vec3 lighting = /*visibility * */((ambientColor - shadow) * /*diffuse*/cel_shaded) * vec3(object_color);
+    vec3 lighting = /*visibility * */((ambientColor - shadow) * diffuse/*cel_shaded*/) * vec3(object_color);
     color = vec4(lighting, 1.0);
 }
