@@ -27,16 +27,16 @@ float ClosestShadowCalculation(vec4 fragPosLightSpace)
     float currentDepth = projCoords.z;
     // check whether current frag pos is in shadow
     float shadow = 0;//currentDepth > closestDepth  ? 1.0 : 0.0;
-    for(int x = -1; x <= 1; ++x)
+    for(int x = -3; x <= 3; ++x)
     {
-        for(int y = -1; y <= 1; ++y)
+        for(int y = -3; y <= 3; ++y)
         {
             float bias = 0.001;
             float pcfDepth = texture(closestShadowTexture, projCoords.xy + vec2(x, y) * texelSize).r; 
             shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
         }    
     }
-    shadow /= 100.0;
+    shadow /= 600.0;
     //shadow /= 9.0;
     return shadow;
 }
@@ -81,20 +81,25 @@ void main() {
 
     vec4 object_color = texture(tex, v_tex_coords);
 
-    vec3 cel_shaded = floor((diffuse) * 4) / 4;
+    vec3 cel_shaded = floor((diffuse) * 3) / 3;
 
 
     //shadow mapping
     float shadow;
-    if (length(v_frag_pos - cameraPosition) > 100) { // cascade 2 
+    vec3 frag_pos = v_frag_pos;
+    frag_pos.x = -frag_pos.x;
+    frag_pos.y = 0;
+    vec3 camPos = cameraPosition;
+    camPos.y = 0;
+    if (length(frag_pos - camPos) > 60) { // cascade 2 
         shadow = FurthestShadowCalculation(v_furthest_light_frag_pos);
     } else {
         shadow = ClosestShadowCalculation(v_closest_light_frag_pos);
     }
-    shadow = ClosestShadowCalculation(v_closest_light_frag_pos);
+    //shadow = ClosestShadowCalculation(v_closest_light_frag_pos);
 
 
-    vec3 lighting = /*visibility * */((ambientColor - shadow) * diffuse) * vec3(object_color);
+    vec3 lighting = /*visibility * */((ambientColor - shadow) * /*diffuse*/(cel_shaded + diffuse)) * vec3(object_color);
     color = vec4(lighting, 1.0);
     //color = object_color;
 }
