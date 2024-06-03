@@ -1,2 +1,2 @@
-# baldej_assets
+# game_assets
 just a place for assets for my game
