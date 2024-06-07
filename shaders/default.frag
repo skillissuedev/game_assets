@@ -5,7 +5,6 @@ uniform vec3 lightPos;
 uniform vec3 cameraPosition;  
 uniform sampler2D closestShadowTexture;
 uniform sampler2D furthestShadowTexture;
-
 in vec2 v_tex_coords;
 in vec3 v_frag_pos;
 in vec3 v_normal;
@@ -27,16 +26,16 @@ float ClosestShadowCalculation(vec4 fragPosLightSpace)
     float currentDepth = projCoords.z;
     // check whether current frag pos is in shadow
     float shadow = 0;//currentDepth > closestDepth  ? 1.0 : 0.0;
-    for(int x = -3; x <= 3; ++x)
+    for(int x = -1; x <= 1; ++x)
     {
-        for(int y = -3; y <= 3; ++y)
+        for(int y = -1; y <= 1; ++y)
         {
             float bias = 0.001;
             float pcfDepth = texture(closestShadowTexture, projCoords.xy + vec2(x, y) * texelSize).r; 
             shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
         }    
     }
-    shadow /= 600.0;
+    shadow /= 100.0;
     //shadow /= 9.0;
     return shadow;
 }
@@ -62,13 +61,13 @@ float FurthestShadowCalculation(vec4 fragPosLightSpace) {
             shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
         }    
     }
-    shadow /= 100.0;
+    shadow /= 50.0;
     return shadow;
 }
 
 void main() {
-    vec3 lightColor = vec3(1.0, 1.0, 1.0);
-    float ambient = 0.18;
+    vec3 lightColor = vec3(0.8, 0.8, 0.9);
+    float ambient = 0.17;
     vec3 ambientColor = ambient * lightColor;
 
     vec3 norm = normalize(v_normal);
@@ -88,18 +87,19 @@ void main() {
     float shadow;
     vec3 frag_pos = v_frag_pos;
     frag_pos.x = -frag_pos.x;
+    frag_pos.z = -frag_pos.z;
     frag_pos.y = 0;
     vec3 camPos = cameraPosition;
     camPos.y = 0;
-    if (length(frag_pos - camPos) > 60) { // cascade 2 
+    if (length(frag_pos - camPos) > 100) { // cascade 2 
         shadow = FurthestShadowCalculation(v_furthest_light_frag_pos);
     } else {
         shadow = ClosestShadowCalculation(v_closest_light_frag_pos);
     }
-    //shadow = ClosestShadowCalculation(v_closest_light_frag_pos);
 
-
-    vec3 lighting = /*visibility * */((ambientColor - shadow) * /*diffuse*/(cel_shaded + diffuse)) * vec3(object_color);
+    vec3 lighting = vec3(object_color) * (((ambientColor - shadow) + diffuse/*(cel_shaded + diffuse)*/));
     color = vec4(lighting, 1.0);
+
+
     //color = object_color;
 }
