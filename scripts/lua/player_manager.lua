@@ -31,13 +31,13 @@ function server_update()
     end
     local current_idx = 0
     local system_global_positions = {}
+
     for _,plr in pairs(players) do
         current_idx = current_idx + 1
         system_global_positions[current_idx] = plr
-        print("Player " .. current_idx .. "'s position is " .. plr[1] .. "; " .. plr[2] .. "; " .. plr[3])
     end
+
     set_global_system_value("PlayerManagerPositions", system_global_positions)
-    --save_game()
 end
 
 function get_value(value_name)

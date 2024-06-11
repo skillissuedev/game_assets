@@ -16,6 +16,7 @@ function server_start()
 end
 
 function server_update()
+    local positions = get_global_system_value("WorldGenerator_tile1_Positions")
 end
 
 function reg_message(message)
