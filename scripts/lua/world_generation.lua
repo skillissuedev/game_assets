@@ -5,7 +5,7 @@
     Example: WorldGeneratorTiles = {"tile1", "tile2", "someothertile"}
 
 - WorldGeneratorWorldSpaceMultiplier - how much world space units are in one grid space unit?
-    Default value: 100
+    Default value: 300 
 
 - WorldGeneratorSeed - the seed number used by the world generator. Loaded from the save file.
 
@@ -31,7 +31,7 @@
 
 
 tiles = {} -- pos: system
-world_space_multiplier = 100
+world_space_multiplier = 300
 
 function client_start()
 end
@@ -46,7 +46,7 @@ end
 
 function server_start()
     set_global_system_value("WorldGeneratorTiles", {})
-    set_global_system_value("WorldGeneratorWorldSpaceMultiplier", {100})
+    set_global_system_value("WorldGeneratorWorldSpaceMultiplier", {300})
     seed = get_global_system_value("WorldGeneratorSeed")
     if seed == nil then
         print('seed is nil')
@@ -76,10 +76,14 @@ function server_update()
         local grid_z = to_grid_space(position[3])
 
         local grid_left_x = grid_x - 1
+        local grid_left_x_2 = grid_x - 2
         local grid_right_x = grid_x + 1
+        local grid_right_x_2 = grid_x + 2
 
         local grid_backward_z = grid_z - 1
+        local grid_backward_z_2 = grid_z - 2
         local grid_forward_z = grid_z + 1
+        local grid_forward_z_2 = grid_z + 2
 
         table.insert(tiles_to_load, {grid_x, 0, grid_z})
         table.insert(tiles_to_load, {grid_left_x, 0, grid_z})
@@ -90,6 +94,22 @@ function server_update()
         table.insert(tiles_to_load, {grid_left_x, 0, grid_backward_z})
         table.insert(tiles_to_load, {grid_right_x, 0, grid_forward_z})
         table.insert(tiles_to_load, {grid_right_x, 0, grid_backward_z})
+        table.insert(tiles_to_load, {grid_left_x_2, 0, grid_forward_z_2})
+        table.insert(tiles_to_load, {grid_left_x, 0, grid_forward_z_2})
+        table.insert(tiles_to_load, {grid_x, 0, grid_forward_z_2})
+        table.insert(tiles_to_load, {grid_right_x, 0, grid_forward_z_2})
+        table.insert(tiles_to_load, {grid_right_x_2, 0, grid_forward_z_2})
+        table.insert(tiles_to_load, {grid_left_x_2, 0, grid_backward_z_2})
+        table.insert(tiles_to_load, {grid_left_x, 0, grid_backward_z_2})
+        table.insert(tiles_to_load, {grid_x, 0, grid_backward_z_2})
+        table.insert(tiles_to_load, {grid_right_x, 0, grid_backward_z_2})
+        table.insert(tiles_to_load, {grid_right_x_2, 0, grid_backward_z_2})
+        table.insert(tiles_to_load, {grid_left_x_2, 0, grid_forward_z})
+        table.insert(tiles_to_load, {grid_left_x_2, 0, grid_z})
+        table.insert(tiles_to_load, {grid_left_x_2, 0, grid_backward_z})
+        table.insert(tiles_to_load, {grid_right_x_2, 0, grid_forward_z})
+        table.insert(tiles_to_load, {grid_right_x_2, 0, grid_z})
+        table.insert(tiles_to_load, {grid_right_x_2, 0, grid_backward_z})
     end
 
     systems_tile_positions = {} -- system_name: pos1, pos2, ...
@@ -97,6 +117,7 @@ function server_update()
         local tile_system = get_tile(tile_pos)
         if tile_system == nil then
             local tile_seed = tonumber(tostring(seed) .. math.abs(tile_pos[1]) .. math.abs(tile_pos[3]))
+            print(tostring(seed) .. math.abs(tile_pos[1]) .. math.abs(tile_pos[3]))
 
             if tile_pos[1] < 0 or tile_pos[3] < 0 then
                 tile_seed = -tile_seed
@@ -127,7 +148,8 @@ function to_world_space(val)
 end
 
 function to_grid_space(val)
-    return math.floor(val / world_space_multiplier)
+    return math.floor((val / world_space_multiplier) + 0.5)
+    --return tonumber(string.format("%.0f", val))
 end
 
 function get_tile(pos)
