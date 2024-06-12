@@ -32,6 +32,7 @@
 
 tiles = {} -- pos: system
 world_space_multiplier = 300
+frame_counter = 0 -- used to run generation 10 times/sec instead of 60
 
 function client_start()
 end
@@ -58,89 +59,94 @@ function server_start()
 end
 
 function server_update()
-    local updated_multiplier = get_global_system_value("WorldGeneratorWorldSpaceMultiplier")
-    if updated_multiplier[1] ~= nil then
-        world_space_multiplier = updated_multiplier[1]
-    end
-
-    local tile_systems = get_global_system_value("WorldGeneratorTiles")
-    for _,tile_system in pairs(tile_systems) do
-        set_global_system_value("WorldGenerator_" .. tile_system .. "_Positions", {})
-    end
-
-    tiles_to_load = {}
-    set_global_system_value("PlayerMangerCurrentNearbyPosition", {{0, 0, 0}})
-    local player_positions = get_global_system_value("PlayerManagerPositions")
-    for _,position in pairs(player_positions) do
-        local grid_x = to_grid_space(position[1])
-        local grid_z = to_grid_space(position[3])
-
-        local grid_left_x = grid_x - 1
-        local grid_left_x_2 = grid_x - 2
-        local grid_right_x = grid_x + 1
-        local grid_right_x_2 = grid_x + 2
-
-        local grid_backward_z = grid_z - 1
-        local grid_backward_z_2 = grid_z - 2
-        local grid_forward_z = grid_z + 1
-        local grid_forward_z_2 = grid_z + 2
-
-        table.insert(tiles_to_load, {grid_x, 0, grid_z})
-        table.insert(tiles_to_load, {grid_left_x, 0, grid_z})
-        table.insert(tiles_to_load, {grid_right_x, 0, grid_z})
-        table.insert(tiles_to_load, {grid_x, 0, grid_forward_z})
-        table.insert(tiles_to_load, {grid_x, 0, grid_backward_z})
-        table.insert(tiles_to_load, {grid_left_x, 0, grid_forward_z})
-        table.insert(tiles_to_load, {grid_left_x, 0, grid_backward_z})
-        table.insert(tiles_to_load, {grid_right_x, 0, grid_forward_z})
-        table.insert(tiles_to_load, {grid_right_x, 0, grid_backward_z})
-        table.insert(tiles_to_load, {grid_left_x_2, 0, grid_forward_z_2})
-        table.insert(tiles_to_load, {grid_left_x, 0, grid_forward_z_2})
-        table.insert(tiles_to_load, {grid_x, 0, grid_forward_z_2})
-        table.insert(tiles_to_load, {grid_right_x, 0, grid_forward_z_2})
-        table.insert(tiles_to_load, {grid_right_x_2, 0, grid_forward_z_2})
-        table.insert(tiles_to_load, {grid_left_x_2, 0, grid_backward_z_2})
-        table.insert(tiles_to_load, {grid_left_x, 0, grid_backward_z_2})
-        table.insert(tiles_to_load, {grid_x, 0, grid_backward_z_2})
-        table.insert(tiles_to_load, {grid_right_x, 0, grid_backward_z_2})
-        table.insert(tiles_to_load, {grid_right_x_2, 0, grid_backward_z_2})
-        table.insert(tiles_to_load, {grid_left_x_2, 0, grid_forward_z})
-        table.insert(tiles_to_load, {grid_left_x_2, 0, grid_z})
-        table.insert(tiles_to_load, {grid_left_x_2, 0, grid_backward_z})
-        table.insert(tiles_to_load, {grid_right_x_2, 0, grid_forward_z})
-        table.insert(tiles_to_load, {grid_right_x_2, 0, grid_z})
-        table.insert(tiles_to_load, {grid_right_x_2, 0, grid_backward_z})
-    end
-
-    systems_tile_positions = {} -- system_name: pos1, pos2, ...
-    for _,tile_pos in pairs(tiles_to_load) do
-        local tile_system = get_tile(tile_pos)
-        if tile_system == nil then
-            local tile_seed = tonumber(tostring(seed) .. math.abs(tile_pos[1]) .. math.abs(tile_pos[3]))
-            print(tostring(seed) .. math.abs(tile_pos[1]) .. math.abs(tile_pos[3]))
-
-            if tile_pos[1] < 0 or tile_pos[3] < 0 then
-                tile_seed = -tile_seed
-            else
-                tile_seed = tile_seed * 2
-            end
-
-            math.randomseed(tile_seed)
-            local tile_system_id = math.random(1, #tile_systems)
-            local system = tile_systems[tile_system_id]
-            tiles[tile_pos] = system
-        else
-            if systems_tile_positions[tile_system] == nil then
-                systems_tile_positions[tile_system] = {}
-            end
-
-            table.insert(systems_tile_positions[tile_system], tile_pos)
+    if frame_counter == 6 then
+        local updated_multiplier = get_global_system_value("WorldGeneratorWorldSpaceMultiplier")
+        if updated_multiplier[1] ~= nil then
+            world_space_multiplier = updated_multiplier[1]
         end
-    end
 
-    for system,positions in pairs(systems_tile_positions) do
-        set_global_system_value("WorldGenerator_" .. system .. "_Positions", positions)
+        local tile_systems = get_global_system_value("WorldGeneratorTiles")
+        for _,tile_system in pairs(tile_systems) do
+            set_global_system_value("WorldGenerator_" .. tile_system .. "_Positions", {})
+        end
+
+        tiles_to_load = {}
+        set_global_system_value("PlayerMangerCurrentNearbyPosition", {{0, 0, 0}})
+        local player_positions = get_global_system_value("PlayerManagerPositions")
+        for _,position in pairs(player_positions) do
+            local grid_x = to_grid_space(position[1])
+            local grid_z = to_grid_space(position[3])
+
+            local grid_left_x = grid_x - 1
+            local grid_left_x_2 = grid_x - 2
+            local grid_right_x = grid_x + 1
+            local grid_right_x_2 = grid_x + 2
+
+            local grid_backward_z = grid_z - 1
+            local grid_backward_z_2 = grid_z - 2
+            local grid_forward_z = grid_z + 1
+            local grid_forward_z_2 = grid_z + 2
+
+            table.insert(tiles_to_load, {grid_x, 0, grid_z})
+            table.insert(tiles_to_load, {grid_left_x, 0, grid_z})
+            table.insert(tiles_to_load, {grid_right_x, 0, grid_z})
+            table.insert(tiles_to_load, {grid_x, 0, grid_forward_z})
+            table.insert(tiles_to_load, {grid_x, 0, grid_backward_z})
+            table.insert(tiles_to_load, {grid_left_x, 0, grid_forward_z})
+            table.insert(tiles_to_load, {grid_left_x, 0, grid_backward_z})
+            table.insert(tiles_to_load, {grid_right_x, 0, grid_forward_z})
+            table.insert(tiles_to_load, {grid_right_x, 0, grid_backward_z})
+            table.insert(tiles_to_load, {grid_left_x_2, 0, grid_forward_z_2})
+            table.insert(tiles_to_load, {grid_left_x, 0, grid_forward_z_2})
+            table.insert(tiles_to_load, {grid_x, 0, grid_forward_z_2})
+            table.insert(tiles_to_load, {grid_right_x, 0, grid_forward_z_2})
+            table.insert(tiles_to_load, {grid_right_x_2, 0, grid_forward_z_2})
+            table.insert(tiles_to_load, {grid_left_x_2, 0, grid_backward_z_2})
+            table.insert(tiles_to_load, {grid_left_x, 0, grid_backward_z_2})
+            table.insert(tiles_to_load, {grid_x, 0, grid_backward_z_2})
+            table.insert(tiles_to_load, {grid_right_x, 0, grid_backward_z_2})
+            table.insert(tiles_to_load, {grid_right_x_2, 0, grid_backward_z_2})
+            table.insert(tiles_to_load, {grid_left_x_2, 0, grid_forward_z})
+            table.insert(tiles_to_load, {grid_left_x_2, 0, grid_z})
+            table.insert(tiles_to_load, {grid_left_x_2, 0, grid_backward_z})
+            table.insert(tiles_to_load, {grid_right_x_2, 0, grid_forward_z})
+            table.insert(tiles_to_load, {grid_right_x_2, 0, grid_z})
+            table.insert(tiles_to_load, {grid_right_x_2, 0, grid_backward_z})
+        end
+
+        systems_tile_positions = {} -- system_name: pos1, pos2, ...
+        for _,tile_pos in pairs(tiles_to_load) do
+            local tile_system = get_tile(tile_pos)
+            if tile_system == nil then
+                local tile_seed = tonumber(tostring(seed) .. math.abs(tile_pos[1]) .. math.abs(tile_pos[3]))
+                --print(tostring(seed) .. math.abs(tile_pos[1]) .. math.abs(tile_pos[3]))
+
+                if tile_pos[1] < 0 or tile_pos[3] < 0 then
+                    tile_seed = -tile_seed
+                else
+                    tile_seed = tile_seed * 2
+                end
+
+                math.randomseed(tile_seed)
+                local tile_system_id = math.random(1, #tile_systems)
+                local system = tile_systems[tile_system_id]
+                tiles[tile_pos] = system
+            else
+                if systems_tile_positions[tile_system] == nil then
+                    systems_tile_positions[tile_system] = {}
+                end
+
+                table.insert(systems_tile_positions[tile_system], tile_pos)
+            end
+        end
+
+        for system,positions in pairs(systems_tile_positions) do
+            set_global_system_value("WorldGenerator_" .. system .. "_Positions", positions)
+        end
+
+        frame_counter = 0
     end
+    frame_counter = frame_counter + 1
 end
 
 function to_world_space(val)

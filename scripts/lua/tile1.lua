@@ -1,4 +1,5 @@
 spawned_tiles = {}
+frame_counter = 0 -- used to run generation 10 times/sec instead of 60
 
 function client_start()
 end
@@ -16,42 +17,45 @@ function server_start()
 end
 
 function server_update()
-    local positions_to_spawn = get_global_system_value("WorldGenerator_tile1_Positions")
-    local world_space_multiplier = get_global_system_value("WorldGeneratorWorldSpaceMultiplier")[1]
+    if frame_counter == 6 then
+        local positions_to_spawn = get_global_system_value("WorldGenerator_tile1_Positions")
+        local world_space_multiplier = get_global_system_value("WorldGeneratorWorldSpaceMultiplier")[1]
 
+        for key,spawned_position in pairs(spawned_tiles) do
+            for _,position in pairs(positions_to_spawn) do
+                if are_positions_equal(position, spawned_position) == true then
+                    goto continue1
+                end
+            end
+            table.remove(spawned_tiles, key)
+            local tile_name = "tile1:" .. spawned_position[1] .. ";" .. spawned_position[2] .. ";" .. spawned_position[3]
+            print("Deleting object '" .. tile_name .. "'")
+            delete_object(tile_name)
+            send_custom_message(true, "Delete", tile_name, "Everybody")
 
-    for key,spawned_position in pairs(spawned_tiles) do
+            ::continue1::
+        end
+
         for _,position in pairs(positions_to_spawn) do
-            if are_positions_equal(position, spawned_position) == true then
-                goto continue1
+            for _,spawned_position in pairs(spawned_tiles) do
+                if are_positions_equal(position, spawned_position) == true then
+                    goto continue2
+                end
             end
+            table.insert(spawned_tiles, position)
+            local tile_name = "tile1:" .. position[1] .. ";" .. position[2] .. ";" .. position[3]
+            print("Spawning object '" .. tile_name .. "'")
+            -- Spawn the tile!
+            local tile_world_position = {position[1] * world_space_multiplier, position[2] * world_space_multiplier, position[3] * world_space_multiplier}
+            spawn_tile_server(tile_name, tile_world_position)
+            send_sync_object_message(true, "Spawn", tile_name, tile_world_position, {0, 0, 0}, {1, 1, 1}, "Everybody")
+
+            ::continue2::
         end
-        table.remove(spawned_tiles, key)
-        local tile_name = "tile1:" .. spawned_position[1] .. ";" .. spawned_position[2] .. ";" .. spawned_position[3]
-        print("Deleting object '" .. tile_name .. "'")
-        delete_object(tile_name)
-        send_custom_message(true, "Delete", tile_name, "Everybody")
 
-        ::continue1::
+        frame_counter = 0
     end
-
-    for _,position in pairs(positions_to_spawn) do
-        for _,spawned_position in pairs(spawned_tiles) do
-            if are_positions_equal(position, spawned_position) == true then
-                goto continue2
-            end
-        end
-        table.insert(spawned_tiles, position)
-        local tile_name = "tile1:" .. position[1] .. ";" .. position[2] .. ";" .. position[3]
-        print("Spawning object '" .. tile_name .. "'")
-        -- Spawn the tile!
-        local tile_world_position = {position[1] * world_space_multiplier, position[2] * world_space_multiplier, position[3] * world_space_multiplier}
-        spawn_tile_server(tile_world_position)
-        send_sync_object_message(true, "Spawn", tile_name, tile_world_position, {0, 0, 0}, {1, 1, 1}, "Everybody")
-
-        ::continue2::
-    end
-
+    frame_counter = frame_counter + 1
 end
 
 function reg_message(message)
@@ -62,7 +66,7 @@ function reg_message(message)
         spawn_tile_client(tile_name, world_position)
     elseif message_id == "Delete" then
         local tile_name = message:custom_contents()
-        print("Deleting '" .. tile_name .. "'")
+        --print("Deleting '" .. tile_name .. "'")
         delete_object(tile_name)
     end
 end
@@ -94,7 +98,7 @@ end
 
 
 function spawn_tile_client(name, position)
-    print("Spawning'" .. name .. "'")
+    --print("Spawning'" .. name .. "'")
     new_model_object(name, "models/test_tile.gltf", "textures/comfy52.png")
     local object = find_object(name)
     object:set_position(position[1], position[2], position[3])
@@ -102,11 +106,10 @@ function spawn_tile_client(name, position)
     -- and spawn props
 end
 
-function spawn_tile_server(position)
-    local name = "tile1:" .. position[1] .. ";" .. position[2] .. ";" .. position[3]
+function spawn_tile_server(name, position)
     new_empty_object(name)
     local object = find_object(name)
-    print(object:name())
+    --print(object:name())
     object:set_position(position[1], position[2], position[3], false)
     object:build_object_triangle_mesh_rigid_body("Fixed", "models/test_tile.gltf", "None", 0, 0, 0, 1)
 end
