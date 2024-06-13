@@ -2,6 +2,7 @@ spawned_tiles = {}
 frame_counter = 0 -- used to run generation 10 times/sec instead of 60
 
 function client_start()
+    new_master_instanced_model_object("tile1_master", "models/test_tile.gltf", "textures/comfy52.png")
 end
 
 function client_update()
@@ -99,7 +100,7 @@ end
 
 function spawn_tile_client(name, position)
     --print("Spawning'" .. name .. "'")
-    new_model_object(name, "models/test_tile.gltf", "textures/comfy52.png")
+    new_instanced_model_object(name, "tile1_master")
     local object = find_object(name)
     object:set_position(position[1], position[2], position[3])
     -- maybe build a body here?

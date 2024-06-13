@@ -9,7 +9,6 @@ in vec2 tex_coords;
 in vec4 joints;
 in vec4 weights;
 in mat4 model;
-//in int gl_InstanceID;
 
 uniform jointsMats {
     mat4 jointsMatsArr[MAX_JOINTS];
@@ -27,9 +26,11 @@ out vec3 v_normal;
 out vec3 v_frag_pos;
 
 void main() {
+    //proj * view * model * vec4(pos, 1.0);
+    mat4 mvp = proj * view * model;
     vec3 pos = vec3(-position.x, position.y, -position.z);
     if (joints.x == 0 && joints.y == 0 && joints.z == 0 && joints.w == 0) {
-        gl_Position = proj * view * model * vec4(pos, 1.0);
+        gl_Position = mvp * vec4(pos * 2, 1.0);
     } else {
         mat4 skinMat =
 	    weights.x * jointsMatsArr[int(joints.x)] * jointsInverseBindMatsArr[int(joints.x)] +
@@ -37,7 +38,7 @@ void main() {
             weights.z * jointsMatsArr[int(joints.z)] * jointsInverseBindMatsArr[int(joints.z)] +
             weights.w * jointsMatsArr[int(joints.w)] * jointsInverseBindMatsArr[int(joints.w)];
 
-        gl_Position = proj * view * model * skinMat * vec4(pos, 1.0);
+        gl_Position = mvp * skinMat * vec4(pos * 2, 1.0);
     }
 
     v_tex_coords = tex_coords;
