@@ -97,7 +97,8 @@ void main() {
         shadow = ClosestShadowCalculation(v_closest_light_frag_pos);
     }
 
-    vec3 lighting = vec3(object_color) * (((ambientColor - shadow) + diffuse/*(cel_shaded + diffuse)*/));
+    //vec3 lighting = vec3(object_color) * (((ambientColor - shadow) + diffuse/*(cel_shaded + diffuse)*/));
+    vec3 lighting = vec3(object_color) - cel_shaded * 0.02 - diffuse * 0.5 - shadow + ambientColor;
     color = vec4(lighting, 1.0);
 
 

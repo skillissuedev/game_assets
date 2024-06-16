@@ -1,4 +1,5 @@
 spawned_tiles = {}
+tiles_props = {}
 frame_counter = 0 -- used to run generation 10 times/sec instead of 60
 
 function client_start()
@@ -67,12 +68,11 @@ function reg_message(message)
         spawn_tile_client(tile_name, world_position)
     elseif message_id == "Delete" then
         local tile_name = message:custom_contents()
-        --print("Deleting '" .. tile_name .. "'")
         delete_object(tile_name)
     end
 end
 
-function get_spawned_tile(pos)
+function get_spawned_prop(pos)
     for k,v in pairs(spawned_tiles) do
         if k[1] == pos[1] then
             if k[2] == pos[2] then
@@ -99,7 +99,6 @@ end
 
 
 function spawn_tile_client(name, position)
-    --print("Spawning'" .. name .. "'")
     new_instanced_model_object(name, "tile1_master")
     local object = find_object(name)
     object:set_position(position[1], position[2], position[3])
@@ -113,4 +112,9 @@ function spawn_tile_server(name, position)
     --print(object:name())
     object:set_position(position[1], position[2], position[3], false)
     object:build_object_triangle_mesh_rigid_body("Fixed", "models/test_tile.gltf", "None", 0, 0, 0, 1)
+
+    local tree1_spawn_positions = get_global_system_value("TileProps_tree1_SpawnPositions")
+    print(tree1_spawn_positions)
+    table.insert(tree1_spawn_positions, {position[1], position[2] + 50, position[3]})
+    set_global_system_value("TileProps_tree1_SpawnPositions", tree1_spawn_positions)
 end
