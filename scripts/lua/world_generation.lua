@@ -45,10 +45,10 @@ function client_render()
 
 end
 
-function server_start()
-    set_global_system_value("WorldGeneratorTiles", {})
-    set_global_system_value("WorldGeneratorWorldSpaceMultiplier", {300})
-    seed = get_global_system_value("WorldGeneratorSeed")
+function server_start(framework)
+    framework:set_global_system_value("WorldGeneratorTiles", {})
+    framework:set_global_system_value("WorldGeneratorWorldSpaceMultiplier", {300})
+    seed = framework:get_global_system_value("WorldGeneratorSeed")
     if seed == nil then
         print('seed is nil')
         seed = 0
@@ -58,21 +58,21 @@ function server_start()
     end
 end
 
-function server_update()
+function server_update(framework)
     if frame_counter == 6 then
-        local updated_multiplier = get_global_system_value("WorldGeneratorWorldSpaceMultiplier")
+        local updated_multiplier = framework:get_global_system_value("WorldGeneratorWorldSpaceMultiplier")
         if updated_multiplier[1] ~= nil then
             world_space_multiplier = updated_multiplier[1]
         end
 
-        local tile_systems = get_global_system_value("WorldGeneratorTiles")
+        local tile_systems = framework:get_global_system_value("WorldGeneratorTiles")
         for _,tile_system in pairs(tile_systems) do
-            set_global_system_value("WorldGenerator_" .. tile_system .. "_Positions", {})
+            framework:set_global_system_value("WorldGenerator_" .. tile_system .. "_Positions", {})
         end
 
         tiles_to_load = {}
-        set_global_system_value("PlayerMangerCurrentNearbyPosition", {{0, 0, 0}})
-        local player_positions = get_global_system_value("PlayerManagerPositions")
+        framework:set_global_system_value("PlayerMangerCurrentNearbyPosition", {{0, 0, 0}})
+        local player_positions = framework:get_global_system_value("PlayerManagerPositions")
         for _,position in pairs(player_positions) do
             local grid_x = to_grid_space(position[1])
             local grid_z = to_grid_space(position[3])
@@ -119,7 +119,6 @@ function server_update()
             local tile_system = get_tile(tile_pos)
             if tile_system == nil then
                 local tile_seed = tonumber(tostring(seed) .. math.abs(tile_pos[1]) .. math.abs(tile_pos[3]))
-                --print(tostring(seed) .. math.abs(tile_pos[1]) .. math.abs(tile_pos[3]))
 
                 if tile_pos[1] < 0 or tile_pos[3] < 0 then
                     tile_seed = -tile_seed
@@ -141,7 +140,7 @@ function server_update()
         end
 
         for system,positions in pairs(systems_tile_positions) do
-            set_global_system_value("WorldGenerator_" .. system .. "_Positions", positions)
+            framework:set_global_system_value("WorldGenerator_" .. system .. "_Positions", positions)
         end
 
         frame_counter = 0
