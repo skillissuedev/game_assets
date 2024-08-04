@@ -1,4 +1,5 @@
 players = {}
+connected_players_ids = {}
 
 function client_start(framework)
     new_character_controller(
@@ -34,6 +35,7 @@ function server_update(framework)
             print("New player connected! ID: " .. ev["id"])
             print("Adding it to the 'players' table!")
             players[ev["id"]] = {0.0, 20.0, 0.0}
+            table.insert(connected_players_ids, ev["id"])
         elseif ev["type"] == "ClientDisconnected" then
             print("The player has disconnected! ID: " .. ev["id"])
             print("Removing it from the 'players' table!")
@@ -49,6 +51,7 @@ function server_update(framework)
     end
 
     framework:set_global_system_value("PlayerManagerPositions", system_global_positions)
+    framework:set_global_system_value("PlayerManagerIDs", connected_players_ids)
 end
 
 function get_value(value_name)
