@@ -1,9 +1,15 @@
+current_player = nil
 players = {}
 connected_players_ids = {}
 
 function client_start(framework)
+    framework:new_bind_keyboard("forward", {"KeyW"})
+    framework:new_bind_keyboard("left", {"KeyA"})
+    framework:new_bind_keyboard("backward", {"KeyS"})
+    framework:new_bind_keyboard("right", {"KeyD"})
+    framework:new_bind_keyboard("jump", {"Space"})
     new_character_controller(
-        "a",
+        "player",
         "Cuboid",
         nil,
         nil,
@@ -12,15 +18,69 @@ function client_start(framework)
         1.0,
         framework
     )
-    new_empty_object("test")
+    set_object_position("player", 0, 20, 0, true)
+    current_player = find_object("player")
     framework:preload_model_asset("test", "models/mushroom.gltf")
-    new_model_object("model", "test", nil, nil, nil)
-
+    --new_model_object("model", "test", nil, nil, nil)
 end
 
 function client_update(framework)
+    local delta_time = framework:delta_time()
+
+    local camera_rotation = framework:get_camera_rotation()
+    local delta = framework:mouse_delta()
+    framework:set_camera_rotation(camera_rotation[1] - delta[2] * 50.0 * delta_time, camera_rotation[2] + delta[1] * 50.0 * delta_time, camera_rotation[3]);
+
+    if framework:get_camera_rotation()[1] > 89.0 then
+        framework:set_camera_rotation(89.0, camera_rotation[2], camera_rotation[3])
+    elseif framework:get_camera_rotation()[1] < -89.0 then
+        framework:set_camera_rotation(-89.0, camera_rotation[2], camera_rotation[3])
+    end
+
+    current_player:set_rotation(0, camera_rotation[2], camera_rotation[3])
+    print(current_player:get_rotation()[2])
+
+    local movement_x = 0
+    local movement_y = -9.8
+    local movement_z = 0
+    local speed = 20
+    local diagonal_slowdown = 1.414
+
+    if framework:is_bind_down("forward") then
+        movement_z = movement_z + speed
+    end
+
+    if framework:is_bind_down("backward") then
+        movement_z = movement_z - speed
+    end
+
+    if framework:is_bind_down("left") then
+        movement_x = movement_x - speed
+        if movement_z ~= 0 then
+            movement_x = movement_x / diagonal_slowdown
+            movement_z = movement_z / diagonal_slowdown
+        end
+    end
+
+    if framework:is_bind_down("right") then
+        movement_x = movement_x + speed
+        if movement_z ~= 0 then
+            movement_x = movement_x / diagonal_slowdown
+            movement_z = movement_z / diagonal_slowdown
+        end
+    end
+
+    if framework:is_bind_pressed("jump") then
+        movement_y = movement_y + 10000
+    end
+
+    current_player:move_controller(movement_x * delta_time, movement_y * delta_time, movement_z * delta_time)
+
+    local position = current_player:get_position()
+    framework:set_camera_position(position[1], position[2], position[3])
+    --[[
     local player_position = framework:get_global_system_value("PlayerPosition")
-    send_sync_object_message(false, "SyncPlayer", "", player_position[1], {0, 0, 0}, {0, 0, 0})
+    send_sync_object_message(false, "SyncPlayer", "", player_position[1], {0, 0, 0}, {0, 0, 0})]]--
 end
 
 function client_render()
@@ -30,7 +90,7 @@ function server_start(framework)
 end
 
 function server_update(framework)
-  for _, ev in pairs(get_network_events()) do
+    for _, ev in pairs(get_network_events()) do
         if ev["type"] == "ClientConnected" then
             print("New player connected! ID: " .. ev["id"])
             print("Adding it to the 'players' table!")
@@ -63,7 +123,7 @@ function reg_message(message)
         local position_rotation_scale = message:sync_object_pos_rot_scale()
         local position = position_rotation_scale[1]
         local sender = message:message_sender()
-        --print("msg from " .. sender .. ": x = " .. position[1] .. "; y = " .. position[2] .. "; z = " .. position[3])
+        print("msg from " .. sender .. ": x = " .. position[1] .. "; y = " .. position[2] .. "; z = " .. position[3])
         players[sender] = position
     end
 end

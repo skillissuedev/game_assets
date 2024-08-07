@@ -103,6 +103,8 @@ end
 function spawn_tile_client(name, position)
     new_instanced_model_object(name, "tile1_master")
     set_object_position(name, position[1], position[2], position[3])
+    local object = find_object(name)
+    object:build_object_triangle_mesh_rigid_body("Fixed", "models/test_tile.gltf", "None", 0, 0, 0, 1, nil, nil)
     -- maybe build a body here?
     -- and spawn props
 end

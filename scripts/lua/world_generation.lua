@@ -46,6 +46,7 @@ function client_render()
 end
 
 function server_start(framework)
+    framework:save_game()
     framework:set_global_system_value("WorldGeneratorTiles", {})
     framework:set_global_system_value("WorldGeneratorWorldSpaceMultiplier", {300})
     seed = framework:get_global_system_value("WorldGeneratorSeed")

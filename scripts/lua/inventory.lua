@@ -1,15 +1,15 @@
 player_inventories = {}
 
 function client_start(framework)
-    framework:new_window("Inventory", false)
-    show_inventory(framework)
+    --framework:new_window("Inventory", false)
+    --show_inventory(framework)
 end
 
 function client_update(framework)
-    local pos_x = framework:get_resolution()[1] / 2 - 500
+    --[[local pos_x = framework:get_resolution()[1] / 2 - 500
     local pos_y = framework:get_resolution()[2] / 2 - 250
 
-    framework:set_window_position("Inventory", {pos_x, pos_y})
+    framework:set_window_position("Inventory", {pos_x, pos_y})]]--
 end
 
 function client_render()
