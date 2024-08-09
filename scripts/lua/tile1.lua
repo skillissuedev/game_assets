@@ -21,6 +21,17 @@ function server_start(framework)
 end
 
 function server_update(framework)
+    for _, ev in pairs(get_network_events()) do
+        if ev["type"] == "ClientConnected" then -- if a client connects, send them all positions
+            for _, position in pairs(spawned_tiles) do
+                local world_space_multiplier = framework:get_global_system_value("WorldGeneratorWorldSpaceMultiplier")[1]
+                local tile_name = "tile1:" .. position[1] .. ";" .. position[2] .. ";" .. position[3]
+                local tile_world_position = {position[1] * world_space_multiplier, position[2] * world_space_multiplier, position[3] * world_space_multiplier}
+                send_sync_object_message(true, "Spawn", tile_name, tile_world_position, {0, 0, 0}, {1, 1, 1}, "OneClient", ev["id"])
+            end
+        end
+    end
+
     if frame_counter == 6 then
         local positions_to_spawn = framework:get_global_system_value("WorldGenerator_tile1_Positions")
         local world_space_multiplier = framework:get_global_system_value("WorldGeneratorWorldSpaceMultiplier")[1]
@@ -105,7 +116,7 @@ function spawn_tile_client(name, position)
     set_object_position(name, position[1], position[2], position[3])
     local object = find_object(name)
     object:build_object_triangle_mesh_rigid_body("Fixed", "models/test_tile.gltf", "None", 0, 0, 0, 1, nil, nil)
-    -- maybe build a body here?
+    print("Spawning tile1. Position = [" .. position[1] .. ", " .. position[2] .. ", " .. position[3] .. "]")
     -- and spawn props
 end
 
