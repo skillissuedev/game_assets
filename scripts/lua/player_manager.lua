@@ -15,12 +15,12 @@ function client_start(framework)
     framework:new_bind_keyboard("jump", {"Space"})
     new_character_controller(
         "player",
-        "Cuboid",
+        "Capsule",
         nil,
         nil,
-        0.597,
-        1.8,
-        0.344,
+        0.29,
+        0.9,
+        0.172,
         framework
     )
     set_object_position("player", 0, 20, 0, true)
@@ -110,6 +110,12 @@ function server_update(framework)
             print("Adding it to the 'players' table!")
             player_positions[ev["id"]] = {0.0, 20.0, 0.0}
             table.insert(connected_players_ids, ev["id"])
+
+            -- test items xd
+            local plr_items_list = { "VanillaOldAxe", "VanillaOldAxe", "VanillaOldAxe" }
+            framework:set_global_system_value("InventoryPlayerItems_" .. ev["id"], plr_items_list)
+            -- end of test
+
         elseif ev["type"] == "ClientDisconnected" then
             print("The player has disconnected! ID: " .. ev["id"])
             print("Removing it from the 'players' table!")

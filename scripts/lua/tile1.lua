@@ -80,7 +80,7 @@ function reg_message(message, framework)
         local tile_name = message:sync_object_name()
         spawn_tile_client(tile_name, world_position)
     elseif message_id == "Delete" then
-        local tile_name = message:custom_contents()
+        local tile_name = message:custom_contents()[1]
         delete_object(tile_name)
     end
 end

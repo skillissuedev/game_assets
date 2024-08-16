@@ -36,7 +36,7 @@ function server_update()
 end
 
 function reg_message(message)
-    contents = message:custom_contents()
+    contents = message:custom_contents()[1]
     message_id = message:message_id()
     print("message '" .. message_id .. "' contents = " .. contents)
 end

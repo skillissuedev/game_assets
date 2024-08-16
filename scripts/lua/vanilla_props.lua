@@ -54,7 +54,7 @@ function reg_message(message, framework)
         new_instanced_model_object(object_name, "tree1_master")
         set_object_position(object_name, position[1], position[2], position[3])
     elseif message_id == "DeleteTree1" then
-        local object_name = message:custom_contents()
+        local object_name = message:custom_contents()[1]
         delete_object(object_name)
     end
 end
