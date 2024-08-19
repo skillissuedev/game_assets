@@ -15,7 +15,7 @@ function client_start(framework)
     framework:new_bind_keyboard("jump", {"Space"})
     new_character_controller(
         "player",
-        "Capsule",
+        "Cuboid",
         nil,
         nil,
         0.29,
@@ -111,9 +111,11 @@ function server_update(framework)
             player_positions[ev["id"]] = {0.0, 20.0, 0.0}
             table.insert(connected_players_ids, ev["id"])
 
+            framework:set_global_system_value("InventoryPlayerItems_" .. ev["id"], {})
+
             -- test items xd
-            local plr_items_list = { "VanillaOldAxe", "VanillaOldAxe", "VanillaOldAxe" }
-            framework:set_global_system_value("InventoryPlayerItems_" .. ev["id"], plr_items_list)
+            local plr_items_list = { { "VanillaOldAxe", 20 }, { "VanillaOldAxe", 1 }, { "VanillaOldAxe", 11 } }
+            framework:set_global_system_value("InventoryAddPlayerItems_" .. ev["id"], plr_items_list)
             -- end of test
 
         elseif ev["type"] == "ClientDisconnected" then
