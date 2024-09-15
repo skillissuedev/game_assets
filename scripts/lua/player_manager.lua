@@ -3,8 +3,13 @@ player_positions = {}
 connected_players_ids = {}
 -- client variables
 current_player = nil
+current_player_ray = nil
 player_model_objects_positions = {}
 player_model_objects = {}
+falling_movement = 0
+player_jump_movement = 0
+player_jump_movement_left = 0
+is_jumping_up = nil
 
 function client_start(framework)
     framework:preload_model_asset("models/character_no_head.gltf", "models/character_no_head.gltf")
@@ -23,21 +28,36 @@ function client_start(framework)
         0.172,
         framework
     )
+    new_ray(
+        "player_ray",
+        0,
+        -1,
+        0
+    )
     set_object_position("player", 0, 20, 0, true)
     current_player = find_object("player")
+    current_player_ray = find_object("player_ray")
+
+    --new_model_object("a", "models/character_no_head.gltf", "textures/white.png", nil, nil)
 end
 
 function client_update(framework)
     -- syncing other players' character models
-    for id, position in pairs(player_model_objects_positions) do
+    --[[for id, position in pairs(player_model_objects_positions) do
         if player_model_objects[id] == nil then
+            print("id: " .. id .. "; pos = " .. position[1] .. ", " .. position[2] .. ", " .. position[3])
             local object_name = "Player#" .. id
             new_model_object(object_name, "models/character_no_head.gltf", "textures/white.png", nil, nil)
             player_model_objects[id] = find_object(object_name)
+            print(player_model_objects[id])
         end
+        --print(player_model_objects[id])
         player_model_objects[id]:set_position(-position[1], position[2], position[3]) -- -x is just for testing purposes xd
-    end
+    end]]--
 
+    local position = current_player:get_position()
+    current_player_ray:set_position(position[3], position[2], position[1]) -- -0.45 because the ray should be placed at the bottom of the controller
+    --print(current_player_ray:is_intersecting())
     -- moving character & camera
     local delta_time = framework:delta_time()
 
@@ -54,9 +74,9 @@ function client_update(framework)
     current_player:set_rotation(0, camera_rotation[2], camera_rotation[3])
 
     local movement_x = 0
-    local movement_y = -9.8
+    local movement_y = 0
     local movement_z = 0
-    local speed = 35
+    local speed = 15
     local diagonal_slowdown = 1.414
 
     if framework:is_bind_down("forward") then
@@ -84,12 +104,36 @@ function client_update(framework)
     end
 
     if framework:is_bind_pressed("jump") then
-        movement_y = movement_y + 10000
+        if player_jump_movement_left <= 0 then
+            player_jump_movement_left = 100
+            is_jumping_up = true
+        end
     end
 
+    if player_jump_movement_left <= 0 and current_player_ray:is_intersecting() == false then
+        is_jumping_up = false
+        falling_movement = -2.0
+    elseif current_player_ray:is_intersecting() then
+        --print("not falling")
+        falling_movement = 0
+    end
+
+    if is_jumping_up == true then
+        movement_y = player_jump_movement + 2.0
+        player_jump_movement = movement_y
+        player_jump_movement_left = player_jump_movement_left - movement_y
+        print("JUMPING UP")
+        print(player_jump_movement)
+    end
+
+    if falling_movement ~= 0 then
+        movement_y = falling_movement - 2.0
+        falling_movement = movement_y
+        --print("FALLING")
+        --print(falling_movement)
+    end
     current_player:move_controller(movement_x * delta_time, movement_y * delta_time, movement_z * delta_time)
 
-    local position = current_player:get_position()
     framework:set_camera_position(position[1], position[2], position[3])
 
     -- sending a message to the server
@@ -158,58 +202,3 @@ function reg_message(message, framework)
         player_model_objects_positions[id] = position
     end
 end
---[[
-function client_start()
-
-end
-
-function client_update()
-end
-
-function client_render()
-
-end
-
-function server_start()
-    --register_save_value("PlayerManagerPositions")
-end
-]]--
---[[
-function server_update()
-end
-
-function get_value(value_name)
-    if value_name == "is_there_a_player_nearby" then
-        local position = get_global_system_value("PlayerMangerCurrentNearbyPosition")[1]
-        local max_distance = get_global_system_value("PlayerMangerCurrentNearbyDistance")[1]
-        print('PlayerMangerPosition = ' .. position[1])
-        print('PlayerMangerDistance = ' .. max_distance)
-        for _, plr in pairs(players) do
-            local distance = distance(plr[1], plr[2], plr[3], position[1], position[2], position[3])
-            print('distance = ' .. distance)
-            if distance <= max_distance then
-                return true
-            end
-        end
-        return false
-    end
-end
-
-function reg_message(message)
-    local message_id = message:message_id()
-    if message_id == "SyncPlayer" then
-        local position_rotation_scale = message:sync_object_pos_rot_scale()
-        local position = position_rotation_scale[1]
-        local sender = message:message_sender()
-        --print("msg from " .. sender .. ": x = " .. position[1] .. "; y = " .. position[2] .. "; z = " .. position[3])
-        players[sender] = position
-    end
-end
-
-function distance(x1, y1, z1, x2, y2, z2)
-    local dx = x1 - x2
-    local dy = y1 - y2
-    local dz = z1 - z2
-    return math.sqrt (dx * dx + dy * dy + dz * dz)
-end
-]]--

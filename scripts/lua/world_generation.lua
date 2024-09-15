@@ -38,7 +38,6 @@ function client_start()
 end
 
 function client_update()
-
 end
 
 function client_render()
