@@ -158,7 +158,7 @@ function server_update(framework)
             framework:set_global_system_value("InventoryPlayerItems_" .. ev["id"], {})
 
             -- test items xd
-            local plr_items_list = { { "VanillaOldAxe", 20 }, { "VanillaOldAxe", 1 }, { "VanillaOldAxe", 11 } }
+            local plr_items_list = { { "VanillaOldAxe", 20 }, { "VanillaOldAxe", 1 }, { "VanillaOldAxe", 52 }, { "VanillaWood", 99 } }
             framework:set_global_system_value("InventoryAddPlayerItems_" .. ev["id"], plr_items_list)
             -- end of test
 

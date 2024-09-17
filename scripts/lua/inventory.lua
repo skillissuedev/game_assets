@@ -1,14 +1,18 @@
 -- client
 is_showing_inventory = false
 inventory_items = {}
+hotbar_items = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+current_hotbar_slot = 1
 selected_item_idx = 0
 current_cursor_item = nil
 
 function client_start(framework)
     framework:new_bind_keyboard("Inventory", { "Escape", "Tab" })
+
     --   items   --
     -- { 'id': {"name", "img", "desc", {"tag1", "tag2", ...}}, ... }
     framework:set_global_system_value("InventoryItemsList", {})
+    framework:set_global_system_value("InventoryCurrentHotbarSlot", {0})
 
     -- Hotbar UI --
     framework:new_window("Hotbar", true)
@@ -19,11 +23,19 @@ function client_start(framework)
         framework:set_widget_spacing("Hotbar", "Slot " .. i, 2)
 
         framework:new_window("Hotbar Slot " .. i, true)
-        framework:set_window_on_top("Hotbar Slot " .. i, true)
+        framework:add_image("Hotbar Slot " .. i, "Icon", "textures/transparent.png", {30, 30}, nil)
+        framework:new_bind_keyboard("HotbarSlot" .. i, { "Digit" .. i })
     end
+    framework:new_bind_keyboard("HotbarSlot10", { "Digit0" })
 end
 
 function client_update(framework)
+    for slot_idx = 1, 10 do
+        if framework:is_bind_pressed("HotbarSlot" .. slot_idx) then
+            send_custom_message(true, "SetHotbarSlot", {slot_idx})
+        end
+    end
+
     if framework:is_bind_pressed("Inventory") then
         if is_showing_inventory then
             is_showing_inventory = false
@@ -40,7 +52,7 @@ function client_update(framework)
     for i = 1, 10 do
         local slot_window_position_x = hotbar_window_pos_x + (i - 1) * 52 + 10
         framework:set_window_position("Hotbar Slot " .. i, {slot_window_position_x, hotbar_window_pos_y + 10})
-        framework:add_image("Hotbar Slot " .. i, "Icon", "textures/default_texture.png", {30, 30})
+        framework:set_window_on_top("Hotbar Slot " .. i, true)
     end
 
     if is_showing_inventory then
@@ -48,6 +60,13 @@ function client_update(framework)
         local inv_window_pos_x = framework:get_resolution()[1] / 2 - 500
         local inv_window_pos_y = framework:get_resolution()[2] / 2 - 250
         framework:set_window_position("Inventory", {inv_window_pos_x, inv_window_pos_y})
+    end
+
+    local current_item_inventory = inventory_items[hotbar_items[current_hotbar_slot]]
+    if current_item_inventory ~= nil then
+        framework:set_global_system_value("InventoryCurrentItemId", {current_item_inventory[1]})
+    else
+        framework:set_global_system_value("InventoryCurrentItemId", {})
     end
 end
 
@@ -65,14 +84,22 @@ function client_render(framework)
                 send_custom_message(true, "SetCurrentCursorItem", {idx})
                 break
             end
+            if framework:is_widget_right_clicked("Inventory", "Item name#" .. idx) then
+                selected_item_idx = idx
+                break
+            end
         end
     end
 
     for i = 1, 10 do
         if framework:is_widget_left_clicked("Hotbar", "Slot " .. i) then
-            print("Player clicked the hotbar slot #" .. i)
+            print("Player clicked the slot #" .. i)
             send_custom_message(true, "HotbarSlotClicked", {i})
-
+            break
+        end
+        if framework:is_widget_left_clicked("Hotbar Slot " .. i, "Icon") then
+            print("Player clicked the slot image #" .. i)
+            send_custom_message(true, "HotbarSlotClicked", {i})
             break
         end
     end
@@ -146,6 +173,7 @@ function reg_message(message, framework)
             framework:remove_window("Inventory")
             show_inventory(framework)
         end
+
     elseif message:message_id() == "SetDisplayCursorItem" then
         local inventory_item_idx = message:custom_contents()[1]
         local item_id = inventory_items[inventory_item_idx][1]
@@ -155,9 +183,33 @@ function reg_message(message, framework)
         framework:new_window("CursorItem", true)
         framework:add_image("CursorItem", "Image", item[2], {50, 50})
         framework:set_window_on_top("CursorItem", true)
+
+    elseif message:message_id() == "SetHotbarDisplayItem" then
+        local slot_id = message:custom_contents()[1]
+        local inventory_item_idx = message:custom_contents()[2]
+        local item_id = inventory_items[inventory_item_idx][1]
+        local item = framework:get_global_system_value("InventoryItem_" .. item_id)
+        local image_path = item[2]
+        framework:remove_window("Hotbar Slot " .. slot_id)
+        framework:new_window("Hotbar Slot " .. slot_id, true)
+        framework:add_image("Hotbar Slot " .. slot_id, "Icon", item[2], {30, 30})
+        hotbar_items[slot_id] = inventory_item_idx
+
     elseif message:message_id() == "NullDisplayCursorItem" then
         current_cursor_item = nil
         framework:remove_window("CursorItem")
+
+    elseif message:message_id() == "NullHotbarDisplayItem" then
+        local slot_id = message:custom_contents()[1]
+        framework:remove_window("Hotbar Slot " .. slot_id)
+        framework:new_window("Hotbar Slot " .. slot_id, true)
+        framework:add_image("Hotbar Slot " .. slot_id, "Icon", "textures/transparent.png", {30, 30}, nil)
+        hotbar_items[slot_id] = 0
+
+    elseif message:message_id() == "SetCurrentItem" then
+        local hotbar_slot_idx = message:custom_contents()[1]
+        current_hotbar_slot = hotbar_slot_idx
+        framework:set_global_system_value("InventoryCurrentHotbarSlot", {hotbar_slot_idx})
 
     -- server
     elseif message:message_id() == "SetCurrentCursorItem" then
@@ -180,6 +232,7 @@ function reg_message(message, framework)
             send_custom_message(true, "NullDisplayCursorItem", {}, "OneClient", player_id)
             framework:remove_global_system_value("InventoryPlayerCurrentCursorItem_" .. player_id)
         end
+
     elseif message:message_id() == "HotbarSlotClicked" then
         local player_id = message:message_sender()
         local slot_id = message:custom_contents()[1]
@@ -193,19 +246,26 @@ function reg_message(message, framework)
         if current_cursor_item == nil then
             if player_hotbar[slot_id] ~= 0 then
                 local hotbar_item = player_hotbar[slot_id]
-                print(hotbar_item)
                 framework:set_global_system_value("InventoryPlayerCurrentCursorItem_" .. player_id, {hotbar_item})
                 player_hotbar[slot_id] = 0
                 send_custom_message(true, "SetDisplayCursorItem", {hotbar_item}, "OneClient", player_id)
+                send_custom_message(true, "NullHotbarDisplayItem", {slot_id}, "OneClient", player_id)
             end
         else
             if player_hotbar[slot_id] == 0 then
                 player_hotbar[slot_id] = current_cursor_item[1]
+                send_custom_message(true, "SetHotbarDisplayItem", {slot_id, current_cursor_item[1]}, "OneClient", player_id)
                 framework:remove_global_system_value("InventoryPlayerCurrentCursorItem_" .. player_id)
                 send_custom_message(true, "NullDisplayCursorItem", {}, "OneClient", player_id)
             end
         end
         framework:set_global_system_value("InventoryPlayerHotbar_" .. player_id, player_hotbar)
+
+    elseif message:message_id() == "SetHotbarSlot" then
+        local player_id = message:message_sender()
+        local slot_id = message:custom_contents()[1]
+        framework:set_global_system_value("InventoryPlayerCurrentHotbarSlot_" .. player_id, {slot_id})
+        send_custom_message(true, "SetCurrentItem", {slot_id}, "OneClient", player_id)
     end
 end
 
@@ -248,7 +308,7 @@ function show_inventory(framework)
         local image = item[2]
         local description = item[3]
 
-        framework:add_label("Inventory", "Selected Item Image", image, 14, {500, 300}, "Selected Item")
+        framework:add_image("Inventory", "Selected Item Image", image, {500, 300}, "Selected Item")
         framework:add_label("Inventory", "Selected Item Title", name, 20, {500, 50}, "Selected Item")
         framework:add_label("Inventory", "Selected Item Description", description, 14, {500, 150}, "Selected Item")
     else
