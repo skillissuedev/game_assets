@@ -63,7 +63,7 @@ function client_update(framework)
 
     local camera_rotation = framework:get_camera_rotation()
     local delta = framework:mouse_delta()
-    framework:set_camera_rotation(camera_rotation[1] - delta[2] * 50.0 * delta_time, camera_rotation[2] + delta[1] * 50.0 * delta_time, camera_rotation[3]);
+    framework:set_camera_rotation(camera_rotation[1] + delta[2] * 50.0 * delta_time, camera_rotation[2] + delta[1] * 50.0 * delta_time, camera_rotation[3]);
 
     if framework:get_camera_rotation()[1] > 89.0 then
         framework:set_camera_rotation(89.0, camera_rotation[2], camera_rotation[3])
@@ -71,7 +71,7 @@ function client_update(framework)
         framework:set_camera_rotation(-89.0, camera_rotation[2], camera_rotation[3])
     end
 
-    current_player:set_rotation(0, camera_rotation[2], camera_rotation[3])
+    current_player:set_rotation(0, camera_rotation[2], 0)
 
     local movement_x = 0
     local movement_y = 0
@@ -138,6 +138,7 @@ function client_update(framework)
 
     -- sending a message to the server
     framework:set_global_system_value("PlayerPosition", position)
+    framework:set_global_system_value("PlayerCameraRotation", framework:get_camera_rotation())
     send_sync_object_message(false, "SyncPlayer", "", position, {0, 0, 0}, {0, 0, 0})
 end
 

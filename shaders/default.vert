@@ -28,8 +28,7 @@ out vec4 v_closest_light_frag_pos;
 out vec4 v_furthest_light_frag_pos;
 
 void main() {
-    vec3 pos = vec3(-position.x, position.y, -position.z);
-    //vec3 pos = vec3(position.x, position.y, -position.z);
+    vec3 pos = vec3(position.x, position.y, position.z);
     if (joints.x == 0 && joints.y == 0 && joints.z == 0 && joints.w == 0) {
         gl_Position = mvp * vec4(pos, 1.0);
     } else {
