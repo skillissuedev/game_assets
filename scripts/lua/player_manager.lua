@@ -58,10 +58,12 @@ function client_update(framework)
     local position = current_player:get_position()
     current_player_ray:set_position(position[3], position[2], position[1]) -- -0.45 because the ray should be placed at the bottom of the controller
     --print(current_player_ray:is_intersecting())
+
     -- moving character & camera
     local delta_time = framework:delta_time()
 
     local camera_rotation = framework:get_camera_rotation()
+    local camera_front = framework:get_camera_front()
     local delta = framework:mouse_delta()
     framework:set_camera_rotation(camera_rotation[1] + delta[2] * 50.0 * delta_time, camera_rotation[2] + delta[1] * 50.0 * delta_time, camera_rotation[3]);
 
@@ -139,7 +141,8 @@ function client_update(framework)
     -- sending a message to the server
     framework:set_global_system_value("PlayerPosition", position)
     framework:set_global_system_value("PlayerCameraRotation", framework:get_camera_rotation())
-    send_sync_object_message(false, "SyncPlayer", "", position, {0, 0, 0}, {0, 0, 0})
+    send_sync_object_message(false, "SyncPlayer", "", position, camera_rotation, {0, 0, 0})
+    send_custom_message(false, "SyncFront", {camera_front})
 end
 
 function client_render()
@@ -172,7 +175,7 @@ function server_update(framework)
     local current_idx = 0
     local system_global_positions = {}
 
-    for _,plr in pairs(player_positions) do
+    for idx,plr in pairs(player_positions) do
         current_idx = current_idx + 1
         system_global_positions[current_idx] = plr
     end
@@ -190,12 +193,19 @@ end
 
 function reg_message(message, framework)
     local message_id = message:message_id()
-    if message_id == "SyncPlayer" then
+    if message_id == "SyncPos" then
         local position_rotation_scale = message:sync_object_pos_rot_scale()
         local position = position_rotation_scale[1]
+        local rotation = position_rotation_scale[2]
         local sender = message:message_sender()
         --print("msg from " .. sender .. ": x = " .. position[1] .. "; y = " .. position[2] .. "; z = " .. position[3])
         player_positions[sender] = position
+        framework:set_global_system_value("PlayerManagerPosition_" .. sender, {position})
+        framework:set_global_system_value("PlayerManagerRotation_" .. sender, {rotation})
+    elseif message_id == "SyncFront" then
+        local front = message:custom_contents()
+        local sender = message:message_sender()
+        framework:set_global_system_value("PlayerManagerFront_" .. sender, front)
     elseif message_id == "SyncPlayerModel" then
         local position_rotation_scale = message:sync_object_pos_rot_scale()
         local position = position_rotation_scale[1]

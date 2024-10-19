@@ -1,7 +1,8 @@
 -- client
 local previous_current_item = {}
-local item_attack_animations = {}
-local attack_animation_idx = 1
+local attack_animation_idx = 2
+-- shared
+local item_attacks = {} -- { id: { attack_timing, anim1, anim2, ... }, ... }
 
 function client_start(framework)
     framework:new_bind_mouse("Attack", {"Left"})
@@ -13,7 +14,7 @@ function client_start(framework)
     table.insert(items_list, "VanillaWood")
     local vanilla_old_axe = { "Old Axe", "textures/default_texture.png", "It's just an old axe", { "Takable", "Weapon", "Axe" } }
     local vanilla_wood = { "Wood", "textures/default_texture.png", "A common resource", { "Wood", "Building Material", "Material" } }
-    item_attack_animations["VanillaOldAxe"] = {"Attack.001", "Attack.002"}
+    item_attacks["VanillaOldAxe"] = { 0.083, "Attack.001", "Attack.002" }
     framework:set_global_system_value("InventoryItem_VanillaOldAxe", vanilla_old_axe)
     framework:set_global_system_value("InventoryItem_VanillaWood", vanilla_wood)
 
@@ -38,6 +39,7 @@ function client_update(framework)
                     framework:preload_model_asset("models/viewmodels/vanilla_old_axe_viewmodel.gltf", "models/viewmodels/vanilla_old_axe_viewmodel.gltf")
                     framework:preload_texture_asset("textures/vanilla_old_axe_texture.png", "textures/vanilla_old_axe_texture.png")
                     new_model_object("CurrentItemViewmodel", "models/viewmodels/vanilla_old_axe_viewmodel.gltf", "textures/vanilla_old_axe_texture.png", nil, nil)
+                    find_object("CurrentItemViewmodel"):play_animation("Select")
                 end
                 previous_current_item = current_item_global
                 return
@@ -48,6 +50,7 @@ function client_update(framework)
                 framework:preload_model_asset("models/viewmodels/vanilla_old_axe_viewmodel.gltf", "models/viewmodels/vanilla_old_axe_viewmodel.gltf")
                 framework:preload_texture_asset("textures/vanilla_old_axe_texture.png", "textures/vanilla_old_axe_texture.png")
                 new_model_object("CurrentItemViewmodel", "models/viewmodels/vanilla_old_axe_viewmodel.gltf", "textures/vanilla_old_axe_texture.png", nil, nil)
+                find_object("CurrentItemViewmodel"):play_animation("Select")
             end
             previous_current_item = current_item_global
             return
@@ -61,29 +64,40 @@ function client_render(framework)
     if #previous_current_item > 0 then
         set_object_position("CurrentItemViewmodel", camera_position[1], camera_position[2], camera_position[3])
         set_object_rotation("CurrentItemViewmodel", camera_rotation[1], camera_rotation[2], 0)
+        local object = find_object("CurrentItemViewmodel")
+        local object_animation = object:current_animation()
+        if object_animation == nil then
+            object:play_animation("Idle")
+        end
+
         if framework:is_bind_down("Attack") then
-            local object = find_object("CurrentItemViewmodel")
-            local object_animation = object:current_animation()
             if object_animation ~= nil then
-                if string.match(string.lower(object_animation), "attack") ~= nil then -- if current animation name contains 'attack', don't start the new animation
+                -- if current animation name contains 'attack' or `select`, don't start the new animation
+                local lowercase_object_animation = string.lower(object_animation)
+                if string.match(lowercase_object_animation, "attack") ~= nil or string.match(lowercase_object_animation, "select") ~= nil then
                     goto cant_attack_continue
                 end
             end
             local item_id = previous_current_item[1]
-            local attack_animations = item_attack_animations[item_id]
-            if attack_animation_idx >= #attack_animations then
-                attack_animation_idx = 1
+            local current_item_attacks = item_attacks[item_id]
+            if attack_animation_idx >= #current_item_attacks then
+                attack_animation_idx = 2
             else
                 attack_animation_idx = attack_animation_idx + 1
             end
 
             print("animation idx: " .. attack_animation_idx)
-            print("animation: " .. attack_animations[attack_animation_idx])
-            object:play_animation(attack_animations[attack_animation_idx])
+            print("animation: " .. current_item_attacks[attack_animation_idx])
+            object:play_animation(current_item_attacks[attack_animation_idx])
+            send_custom_message(true, "Attack", {})
 
             ::cant_attack_continue::
         end
         print("pos: x = " .. camera_position[1] .. "; z = " .. camera_position[3])
+    else
+        if does_object_exist("CurrentItemViewmodel") == true then
+            delete_object("CurrentItemViewmodel")
+        end
     end
 end
 
@@ -95,14 +109,72 @@ function server_start(framework)
     table.insert(items_list, "VanillaWood")
     local vanilla_old_axe = { "Old Axe", "textures/default_texture.png", "It's just an old axe", { "Takable", "Weapon", "Axe" } }
     local vanilla_wood = { "Wood", "textures/default_texture.png", "A common resource", { "Wood", "Building Material", "Material" } }
+    item_attacks["VanillaOldAxe"] = { 0.083, 0.9 } -- attack timing, attack duration
     framework:set_global_system_value("InventoryItem_VanillaOldAxe", vanilla_old_axe)
     framework:set_global_system_value("InventoryItem_VanillaWood", vanilla_wood)
 
     framework:set_global_system_value("InventoryItemsList", items_list)
+
+
+    framework:set_global_system_value("ItemsAttackingPlayers", {})
 end
 
 function server_update(framework)
+    local delta_time = framework:delta_time()
+    local attacking_players = framework:get_global_system_value("ItemsAttackingPlayers")
+    local new_attacking_players = {}
+    local attack_time_players = {}
+    for player_idx, player_id in pairs(attacking_players) do
+        local player_previous_attack_time = framework:get_global_system_value("ItemsAttackTimePlayer_" .. player_id)[1]
+        local player_attack_time = player_previous_attack_time + delta_time
+        --print(player_previous_attack_time)
+        --print(player_attack_time)
+
+        local player_item_option = framework:get_global_system_value("InventoryPlayerCurrentItemId_" .. player_id)
+        if player_item_option ~= nil and #player_item_option > 0 then
+            local player_item_id = player_item_option[1]
+            if player_attack_time >= item_attacks[player_item_id][1] then -- if past attack timing, create a ray and check if player hit anything
+                --print("Ray")
+                if does_object_exist("AttackRay") == false then
+                    print("Ray inserted")
+                    local front = framework:get_global_system_value("PlayerManagerFront_" .. player_id)[1]
+                    new_ray("AttackRay", front[1], front[2], front[3], nil)
+                    --local position = framework:get_global_system_value("PlayerManagerPosition_" .. player_id)[1]
+                    --set_object_position("AttackRay", position[1], position[2], position[3])
+                end
+            end
+            if player_attack_time < item_attacks[player_item_id][2] then -- if the attack animation isn't finished, keep player in the attacking players/attack time lists
+                table.insert(new_attacking_players, player_id)
+                attack_time_players[player_id] = player_attack_time
+            end
+        else
+
+        end
+        framework:set_global_system_value("ItemsAttackingPlayers", new_attacking_players)
+        framework:set_global_system_value("ItemsAttackTimePlayer_" .. player_id, {attack_time_players[player_id]})
+    end
+
+
+    -- add attack ray and remove players whose animation is finished
 end
 
 function reg_message(message, framework)
+    if message:message_id() == "Attack" then
+        local player_id = message:message_sender()
+        local attacking_players = framework:get_global_system_value("ItemsAttackingPlayers")
+        for _, player in pairs(attacking_players) do
+            if player_id == player then
+                print("Vanilla items: Player" .. player_id .. " is already attacking!!")
+                return
+            end
+        end
+
+        table.insert(attacking_players, player_id)
+        framework:set_global_system_value("ItemsAttackingPlayers", attacking_players)
+        framework:set_global_system_value("ItemsAttackTimePlayer_" .. player_id, {0})
+    elseif message:message_id() == "StopAttackAnimation" then
+        local object = find_object("CurrentItemViewmodel")
+        local object_animation = object:current_animation()
+        object:stop_animation()
+    end
 end

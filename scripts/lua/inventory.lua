@@ -131,7 +131,19 @@ function server_update(framework)
     local player_current_item = {}
     local ids = framework:get_global_system_value("PlayerManagerIDs")
     for _, id in pairs(ids) do
+        ::player_inventory_update::
+
         local items_to_add = framework:get_global_system_value("InventoryAddPlayerItems_" .. id)
+        local hotbar = framework:get_global_system_value("InventoryPlayerHotbar_" .. id)
+        local hotbar_slot = framework:get_global_system_value("InventoryPlayerCurrentHotbarSlot_" .. id)
+        if hotbar_slot == nil or hotbar == nil then
+            local player_hotbar = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+            framework:set_global_system_value("InventoryPlayerHotbar_" .. id, player_hotbar)
+            framework:set_global_system_value("InventoryPlayerCurrentHotbarSlot_" .. id, {1})
+
+            goto player_inventory_update
+        end
+        --print("InventoryPlayerCurrentHotbarSlot_" .. id)
         local items = framework:get_global_system_value("InventoryPlayerItems_" .. id)
 
         if items_to_add ~= nil then
@@ -155,14 +167,23 @@ function server_update(framework)
                 end
             end
         end
+
+        if hotbar ~= nil then
+            local current_item_inventory = items[hotbar[hotbar_slot[1]]]
+            if current_item_inventory ~= nil then
+                framework:set_global_system_value("InventoryPlayerCurrentItemId_" .. id, {current_item_inventory[1]})
+            else
+                framework:set_global_system_value("InventoryPlayerCurrentItemId_" .. id, {})
+            end
+        else
+            framework:set_global_system_value("InventoryPlayerCurrentItemId_" .. id, {})
+        end
+
         framework:set_global_system_value("InventoryAddPlayerItems_" .. id, {})
-
         framework:set_global_system_value("InventoryPlayerItems_" .. id, items)
-
         send_custom_message(true, "InventoryItems", items, "OneClient", id)
         -- TODO set player current item here
     end
-    framework:set_global_system_value("InventoryPlayerCurrentItem", player_current_item)
 end
 
 function reg_message(message, framework)
@@ -260,7 +281,6 @@ function reg_message(message, framework)
             end
         end
         framework:set_global_system_value("InventoryPlayerHotbar_" .. player_id, player_hotbar)
-
     elseif message:message_id() == "SetHotbarSlot" then
         local player_id = message:message_sender()
         local slot_id = message:custom_contents()[1]

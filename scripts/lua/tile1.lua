@@ -5,6 +5,7 @@ frame_counter = 0 -- used to run generation 10 times/sec instead of 60
 function client_start(framework)
     framework:preload_model_asset("models/test_tile.gltf", "models/test_tile.gltf")
     new_master_instanced_model_object("tile1_master", "models/test_tile.gltf", "textures/comfy52.png", nil, nil)
+    spawn_tile_client("Tile1", {0, 0, 0})
 end
 
 function client_update()
@@ -20,10 +21,11 @@ function server_start(framework)
     local tiles = framework:get_global_system_value("WorldGeneratorTiles")
     table.insert(tiles, "tile1")
     framework:set_global_system_value("WorldGeneratorTiles", tiles)
+    spawn_tile_server("Tile1", {0, 0, 0}, framework)
 end
 
 function server_update(framework)
-    for _, ev in pairs(get_network_events()) do
+    --[[for _, ev in pairs(get_network_events()) do
         if ev["type"] == "ClientConnected" then -- if a client connects, send them all positions
             for _, position in pairs(spawned_tiles) do
                 local world_space_multiplier = framework:get_global_system_value("WorldGeneratorWorldSpaceMultiplier")[1]
@@ -72,7 +74,7 @@ function server_update(framework)
 
         frame_counter = 0
     end
-    frame_counter = frame_counter + 1
+    frame_counter = frame_counter + 1]]--
 end
 
 function reg_message(message, framework)
