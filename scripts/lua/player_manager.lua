@@ -141,7 +141,8 @@ function client_update(framework)
     -- sending a message to the server
     framework:set_global_system_value("PlayerPosition", position)
     framework:set_global_system_value("PlayerCameraRotation", framework:get_camera_rotation())
-    send_sync_object_message(false, "SyncPlayer", "", position, camera_rotation, {0, 0, 0})
+
+    send_sync_object_message(false, "SyncPos", "", position, camera_rotation, {0, 0, 0})
     send_custom_message(false, "SyncFront", {camera_front})
 end
 
@@ -198,7 +199,6 @@ function reg_message(message, framework)
         local position = position_rotation_scale[1]
         local rotation = position_rotation_scale[2]
         local sender = message:message_sender()
-        --print("msg from " .. sender .. ": x = " .. position[1] .. "; y = " .. position[2] .. "; z = " .. position[3])
         player_positions[sender] = position
         framework:set_global_system_value("PlayerManagerPosition_" .. sender, {position})
         framework:set_global_system_value("PlayerManagerRotation_" .. sender, {rotation})

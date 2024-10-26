@@ -134,18 +134,41 @@ function server_update(framework)
         if player_item_option ~= nil and #player_item_option > 0 then
             local player_item_id = player_item_option[1]
             if player_attack_time >= item_attacks[player_item_id][1] then -- if past attack timing, create a ray and check if player hit anything
-                --print("Ray")
                 if does_object_exist("AttackRay") == false then
                     print("Ray inserted")
+
                     local front = framework:get_global_system_value("PlayerManagerFront_" .. player_id)[1]
-                    new_ray("AttackRay", front[1], front[2], front[3], nil)
-                    --local position = framework:get_global_system_value("PlayerManagerPosition_" .. player_id)[1]
-                    --set_object_position("AttackRay", position[1], position[2], position[3])
+                    local position = framework:get_global_system_value("PlayerManagerPosition_" .. player_id)[1]
+                    print("player's front value: " .. front[1] .. ";" .. front[2] .. ";" .. front[3])
+                    print("ray direction value: " .. front[1] * 5 .. ";" .. front[2] * 5 .. ";" .. front[3] * 5)
+                    print("player's position value: " .. position[1] .. ";" .. position[2] .. ";" .. position[3])
+
+                    new_ray("AttackRay", front[1] * 5, front[2] * 5, front[3] * 5, nil)
+                    set_object_position("AttackRay", position[1], position[2], position[3])
+
+                    print("Ray **actually** inserted!")
+                    print("does_object_exist = " .. tostring(does_object_exist("AttackRay")))
+
+                    local object_name = find_object("AttackRay"):intersection_object_name()
+                    if object_name == nil then
+                        print("intersection_object_name: nil")
+                    else
+                        print("intersection_object_name: " .. object_name)
+                    end
+
+                    local intersection_position = find_object("AttackRay"):intersection_position()
+                    if intersection_position == nil then
+                        print("intersection_position: nil")
+                    else
+                        print("intersection_position: " .. intersection_position[1] .. ";" .. intersection_position[2] .. ";" .. intersection_position[3])
+                    end
                 end
             end
             if player_attack_time < item_attacks[player_item_id][2] then -- if the attack animation isn't finished, keep player in the attacking players/attack time lists
                 table.insert(new_attacking_players, player_id)
                 attack_time_players[player_id] = player_attack_time
+            else
+                delete_object("AttackRay")
             end
         else
 
