@@ -127,8 +127,6 @@ function server_update(framework)
     for player_idx, player_id in pairs(attacking_players) do
         local player_previous_attack_time = framework:get_global_system_value("ItemsAttackTimePlayer_" .. player_id)[1]
         local player_attack_time = player_previous_attack_time + delta_time
-        --print(player_previous_attack_time)
-        --print(player_attack_time)
 
         local player_item_option = framework:get_global_system_value("InventoryPlayerCurrentItemId_" .. player_id)
         if player_item_option ~= nil and #player_item_option > 0 then
@@ -140,27 +138,37 @@ function server_update(framework)
                     local front = framework:get_global_system_value("PlayerManagerFront_" .. player_id)[1]
                     local position = framework:get_global_system_value("PlayerManagerPosition_" .. player_id)[1]
                     print("player's front value: " .. front[1] .. ";" .. front[2] .. ";" .. front[3])
-                    print("ray direction value: " .. front[1] * 5 .. ";" .. front[2] * 5 .. ";" .. front[3] * 5)
+                    print("ray direction value: " .. front[1] * 3 .. ";" .. front[2] * 3 .. ";" .. front[3] * 3)
                     print("player's position value: " .. position[1] .. ";" .. position[2] .. ";" .. position[3])
 
-                    new_ray("AttackRay", front[1] * 5, front[2] * 5, front[3] * 5, nil)
+                    new_ray("AttackRay", front[1] * 3, front[2] * 3, front[3] * 3, nil)
                     set_object_position("AttackRay", position[1], position[2], position[3])
 
                     print("Ray **actually** inserted!")
                     print("does_object_exist = " .. tostring(does_object_exist("AttackRay")))
 
                     local object_name = find_object("AttackRay"):intersection_object_name()
+                    local object_groups = find_object("AttackRay"):intersection_object_groups()
                     if object_name == nil then
+                        -- attack affected nothing
                         print("intersection_object_name: nil")
                     else
+                        -- attack affects something
                         print("intersection_object_name: " .. object_name)
-                    end
-
-                    local intersection_position = find_object("AttackRay"):intersection_position()
-                    if intersection_position == nil then
-                        print("intersection_position: nil")
-                    else
-                        print("intersection_position: " .. intersection_position[1] .. ";" .. intersection_position[2] .. ";" .. intersection_position[3])
+                        for _,group in pairs(object_groups) do
+                            if group == "attackable" then
+                                -- i need to figure out a way to store all affected objects in a separate group
+                                -- because multiple systems can hold props.
+                                --
+                                -- maybe getting object's system with it's id (via Ray object basically) can help?
+                                -- something like a global value that stores systems and which object were hit and by who
+                                local damaged_props = framework:get_global_system_value("TileProps_PropsDamage")
+                                table.insert(damaged_props, {object_name, 25, player_id}) -- just hardcoding a damage for now. don't you, future me, dare leaving it like this!
+                                framework:set_global_system_value("TileProps_PropsDamage", damaged_props)
+                                print("attacked!")
+                                break
+                            end
+                        end
                     end
                 end
             end

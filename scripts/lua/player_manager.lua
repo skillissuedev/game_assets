@@ -12,6 +12,11 @@ player_jump_movement_left = 0
 is_jumping_up = nil
 
 function client_start(framework)
+    -- crosshair --
+    framework:new_window("Crosshair", true)
+    framework:add_image("Crosshair", "Crosshair Image", "textures/ui/crosshair.png", {10, 10})
+
+    -- other things --
     framework:preload_model_asset("models/character_no_head.gltf", "models/character_no_head.gltf")
     framework:new_bind_keyboard("forward", {"KeyW"})
     framework:new_bind_keyboard("left", {"KeyA"})
@@ -42,6 +47,12 @@ function client_start(framework)
 end
 
 function client_update(framework)
+    -- moving the crosshair to the center of the screen --
+    local resolution = framework:get_resolution()
+    local crosshair_window_pos_x = resolution[1] / 2 - 5
+    local crosshair_window_pos_y = resolution[2] / 2 - 5
+    framework:set_window_position("Crosshair", {crosshair_window_pos_x, crosshair_window_pos_y})
+
     -- syncing other players' character models
     --[[for id, position in pairs(player_model_objects_positions) do
         if player_model_objects[id] == nil then
