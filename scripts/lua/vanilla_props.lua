@@ -32,13 +32,17 @@ end
 function server_update(framework)
     local props_hp = framework:get_global_system_value("TileProps_PropsHP")
     local damaged_props = framework:get_global_system_value("TileProps_PropsDamage")
+
+    local tree1_props_position = framework:get_global_system_value("TileProps_tree1_PropsPosition")
+    local rock1_props_position = framework:get_global_system_value("TileProps_rock1_PropsPosition")
+
     for _, prop_damage in pairs(damaged_props) do
         local object_name = prop_damage[1]
         local damage = prop_damage[2]
         local attacker = prop_damage[3]
         print(object_name .. " is attacked by player w/ id " .. attacker)
 
-        for _, current_prop_values in pairs(props_hp) do
+        for props_hp_idx, current_prop_values in pairs(props_hp) do
             for idx, val in pairs(current_prop_values) do
                 print("prop_hp #" .. idx .. " = " .. val)
             end
@@ -51,7 +55,31 @@ function server_update(framework)
 
                 if current_prop_health <= 0 then
                     -- please, future me, figure this out
+                    -- UPDATE: i kind of did it
 
+                    table.remove(props_hp, props_hp_idx)
+                    local player_items = framework:get_global_system_value("InventoryAddPlayerItems_" .. attacker)
+                    if string.match(current_prop_name, "tree1:") ~= nil then
+                        for idx,prop_name_and_position in pairs(tree1_props_position) do
+                            local prop_name = prop_name_and_position[1]
+                            if prop_name == current_prop_name then
+                                table.remove(tree1_props_position, idx)
+                                break
+                            end
+                        end
+                        table.insert(player_items, {"VanillaWood", 50})
+                    elseif string.match(current_prop_name, "rock1:") ~= nil then
+                        for idx,prop_name_and_position in pairs(rock1_props_position) do
+                            local prop_name = prop_name_and_position[1]
+                            if prop_name == current_prop_name then
+                                table.remove(rock1_props_position, idx)
+                                break
+                            end
+                        end
+                        table.insert(player_items, {"VanillaWood", 50}) -- change this to the rock id later
+                    end
+                    delete_prop_by_full_name(current_prop_name)
+                    framework:set_global_system_value("InventoryAddPlayerItems_" .. attacker, player_items)
                     print("the prop is dead")
                 end
                 break
@@ -67,9 +95,6 @@ function server_update(framework)
     end
 
     if tick_counter >= 6 then
-        local tree1_props_position = framework:get_global_system_value("TileProps_tree1_PropsPosition")
-        local rock1_props_position = framework:get_global_system_value("TileProps_rock1_PropsPosition")
-
         local tree1_spawn_positions = framework:get_global_system_value("TileProps_tree1_SpawnPositions")
         if tree1_spawn_positions == nil then
             tree1_spawn_positions = {}
@@ -149,12 +174,12 @@ function server_update(framework)
         framework:set_global_system_value("TileProps_rock1_SpawnPositions", {})
         framework:set_global_system_value("TileProps_rock1_DeletePositions", {})
 
-        framework:set_global_system_value("TileProps_tree1_PropsPosition", tree1_props_position)
-        framework:set_global_system_value("TileProps_rock1_PropsPosition", rock1_props_position)
 
         tick_counter = 0
     end
     tick_counter = tick_counter + 1
+    framework:set_global_system_value("TileProps_tree1_PropsPosition", tree1_props_position)
+    framework:set_global_system_value("TileProps_rock1_PropsPosition", rock1_props_position)
     framework:set_global_system_value("TileProps_PropsDamage", {})
     framework:set_global_system_value("TileProps_PropsHP", props_hp)
 end
@@ -182,7 +207,7 @@ function reg_message(message, framework)
         local object_name = message:sync_object_name()
         new_instanced_model_object(object_name, "rock1_master")
         set_object_position(object_name, position[1], position[2], position[3])
-    elseif message_id == "DeleteTree1" then
+    elseif message_id == "DeleteProp" then
         local object_name = message:custom_contents()[1]
         delete_object(object_name)
     end
@@ -215,5 +240,10 @@ end
 function delete_prop(name, position)
     local object_name = name .. ":" .. position[1] .. ";" .. position[2] .. ";" .. position[3]
     delete_object(object_name)
-    send_custom_message(true, "DeleteTree1", object_name, "Everybody")
+    send_custom_message(true, "DeleteProp", {object_name}, "Everybody")
+end
+
+function delete_prop_by_full_name(name)
+    delete_object(name)
+    send_custom_message(true, "DeleteProp", {name}, "Everybody")
 end

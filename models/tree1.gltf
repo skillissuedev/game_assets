@@ -1,6 +1,6 @@
 {
 	"asset":{
-		"generator":"Khronos glTF Blender I/O v4.1.62",
+		"generator":"Khronos glTF Blender I/O v4.2.70",
 		"version":"2.0"
 	},
 	"scene":0,
@@ -18,10 +18,54 @@
 			"name":"Tree01"
 		}
 	],
+	"animations":[
+		{
+			"channels":[
+				{
+					"sampler":0,
+					"target":{
+						"node":0,
+						"path":"translation"
+					}
+				},
+				{
+					"sampler":1,
+					"target":{
+						"node":0,
+						"path":"rotation"
+					}
+				},
+				{
+					"sampler":2,
+					"target":{
+						"node":0,
+						"path":"scale"
+					}
+				}
+			],
+			"name":"Attacked",
+			"samplers":[
+				{
+					"input":4,
+					"interpolation":"STEP",
+					"output":5
+				},
+				{
+					"input":4,
+					"interpolation":"STEP",
+					"output":6
+				},
+				{
+					"input":7,
+					"interpolation":"LINEAR",
+					"output":8
+				}
+			]
+		}
+	],
 	"materials":[
 		{
-			"name":"Material",
-			"pbrMetallicRoughness":{}
+			"name":"Material.001"
 		}
 	],
 	"meshes":[
@@ -74,6 +118,48 @@
 			"componentType":5123,
 			"count":552,
 			"type":"SCALAR"
+		},
+		{
+			"bufferView":4,
+			"componentType":5126,
+			"count":2,
+			"max":[
+				0.3333333333333333
+			],
+			"min":[
+				0
+			],
+			"type":"SCALAR"
+		},
+		{
+			"bufferView":5,
+			"componentType":5126,
+			"count":2,
+			"type":"VEC3"
+		},
+		{
+			"bufferView":6,
+			"componentType":5126,
+			"count":2,
+			"type":"VEC4"
+		},
+		{
+			"bufferView":7,
+			"componentType":5126,
+			"count":21,
+			"max":[
+				0.3333333333333333
+			],
+			"min":[
+				0
+			],
+			"type":"SCALAR"
+		},
+		{
+			"bufferView":8,
+			"componentType":5126,
+			"count":21,
+			"type":"VEC3"
 		}
 	],
 	"bufferViews":[
@@ -100,11 +186,36 @@
 			"byteLength":1104,
 			"byteOffset":8448,
 			"target":34963
+		},
+		{
+			"buffer":0,
+			"byteLength":8,
+			"byteOffset":9552
+		},
+		{
+			"buffer":0,
+			"byteLength":24,
+			"byteOffset":9560
+		},
+		{
+			"buffer":0,
+			"byteLength":32,
+			"byteOffset":9584
+		},
+		{
+			"buffer":0,
+			"byteLength":84,
+			"byteOffset":9616
+		},
+		{
+			"buffer":0,
+			"byteLength":252,
+			"byteOffset":9700
 		}
 	],
 	"buffers":[
 		{
-			"byteLength":9552,
+			"byteLength":9952,
 			"uri":"tree1.bin"
 		}
 	]

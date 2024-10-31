@@ -93,7 +93,6 @@ function client_render(framework)
 
             ::cant_attack_continue::
         end
-        print("pos: x = " .. camera_position[1] .. "; z = " .. camera_position[3])
     else
         if does_object_exist("CurrentItemViewmodel") == true then
             delete_object("CurrentItemViewmodel")
