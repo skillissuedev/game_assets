@@ -131,7 +131,7 @@ function server_update(framework)
         if player_item_option ~= nil and #player_item_option > 0 then
             local player_item_id = player_item_option[1]
             if player_attack_time >= item_attacks[player_item_id][1] then -- if past attack timing, create a ray and check if player hit anything
-                if does_object_exist("AttackRay") == false then
+                if does_object_exist("AttackRay_" .. player_id) == false then
                     print("Ray inserted")
 
                     local front = framework:get_global_system_value("PlayerManagerFront_" .. player_id)[1]
@@ -140,14 +140,15 @@ function server_update(framework)
                     print("ray direction value: " .. front[1] * 3 .. ";" .. front[2] * 3 .. ";" .. front[3] * 3)
                     print("player's position value: " .. position[1] .. ";" .. position[2] .. ";" .. position[3])
 
-                    new_ray("AttackRay", front[1] * 3, front[2] * 3, front[3] * 3, nil)
-                    set_object_position("AttackRay", position[1], position[2], position[3])
+                    new_ray("AttackRay_" .. player_id, front[1] * 3, front[2] * 3, front[3] * 3, nil)
+                    set_object_position("AttackRay_" .. player_id, position[1], position[2], position[3])
 
                     print("Ray **actually** inserted!")
-                    print("does_object_exist = " .. tostring(does_object_exist("AttackRay")))
+                    print("does_object_exist = " .. tostring(does_object_exist("AttackRay_" .. player_id)))
 
-                    local object_name = find_object("AttackRay"):intersection_object_name()
-                    local object_groups = find_object("AttackRay"):intersection_object_groups()
+                    local object_name = find_object("AttackRay_" .. player_id):intersection_object_name()
+                    local object_groups = find_object("AttackRay_" .. player_id):intersection_object_groups()
+                    local object_properties = find_object("AttackRay_" .. player_id):intersection_object_properties()
                     if object_name == nil then
                         -- attack affected nothing
                         print("intersection_object_name: nil")
@@ -156,14 +157,12 @@ function server_update(framework)
                         print("intersection_object_name: " .. object_name)
                         for _,group in pairs(object_groups) do
                             if group == "attackable" then
-                                -- i need to figure out a way to store all affected objects in a separate group
-                                -- because multiple systems can hold props.
-                                --
-                                -- maybe getting object's system with it's id (via Ray object basically) can help?
-                                -- something like a global value that stores systems and which object were hit and by who
-                                local damaged_props = framework:get_global_system_value("TileProps_PropsDamage")
+                                local parent_system = object_properties["ParentSystem"][1]
+                                local attackable_type = object_properties["AttackableType"][1]
+                                local global_value_name = parent_system .. "_" .. attackable_type .. "_Damage"
+                                local damaged_props = framework:get_global_system_value(global_value_name)
                                 table.insert(damaged_props, {object_name, 25, player_id}) -- just hardcoding a damage for now. don't you, future me, dare leaving it like this!
-                                framework:set_global_system_value("TileProps_PropsDamage", damaged_props)
+                                framework:set_global_system_value(global_value_name, damaged_props)
                                 print("attacked!")
                                 break
                             end
@@ -175,7 +174,7 @@ function server_update(framework)
                 table.insert(new_attacking_players, player_id)
                 attack_time_players[player_id] = player_attack_time
             else
-                delete_object("AttackRay")
+                delete_object("AttackRay_" .. player_id)
             end
         else
 

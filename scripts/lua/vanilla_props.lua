@@ -23,7 +23,8 @@ end
 
 function server_start(framework)
     framework:set_global_system_value("TileProps_PropsHP", {}) -- {{object_name, hp}}
-    framework:set_global_system_value("TileProps_PropsDamage", {}) -- {{object_name, damage, attacker}}
+    framework:set_global_system_value("TileProps_tree1_Damage", {}) -- {{object_name, damage, attacker}}
+    framework:set_global_system_value("TileProps_rock1_Damage", {}) -- {{object_name, damage, attacker}}
 
     framework:set_global_system_value("TileProps_tree1_PropsPosition", {}) -- {{object_name, position}}
     framework:set_global_system_value("TileProps_rock1_PropsPosition", {}) -- {{object_name, position}}
@@ -31,16 +32,17 @@ end
 
 function server_update(framework)
     local props_hp = framework:get_global_system_value("TileProps_PropsHP")
-    local damaged_props = framework:get_global_system_value("TileProps_PropsDamage")
+    local damaged_tree1_props = framework:get_global_system_value("TileProps_tree1_Damage")
 
     local tree1_props_position = framework:get_global_system_value("TileProps_tree1_PropsPosition")
     local rock1_props_position = framework:get_global_system_value("TileProps_rock1_PropsPosition")
 
-    for _, prop_damage in pairs(damaged_props) do
+
+    for _, prop_damage in pairs(damaged_tree1_props) do
         local object_name = prop_damage[1]
         local damage = prop_damage[2]
         local attacker = prop_damage[3]
-        print(object_name .. " is attacked by player w/ id " .. attacker)
+        print("tree1 '" .. object_name .. "' is attacked by player w/ id " .. attacker)
 
         for props_hp_idx, current_prop_values in pairs(props_hp) do
             for idx, val in pairs(current_prop_values) do
@@ -52,40 +54,31 @@ function server_update(framework)
                 print("damage = " .. damage .. "; old hp =" .. current_prop_health .. "; new hp = " .. current_prop_health - damage)
                 current_prop_health = current_prop_health - damage
                 current_prop_values[2] = current_prop_health
+                local player_items = framework:get_global_system_value("InventoryAddPlayerItems_" .. attacker)
+                for idx,prop_name_and_position in pairs(tree1_props_position) do
+                    local prop_name = prop_name_and_position[1]
+                    if prop_name == current_prop_name then -- probably should move everything to a separate function
+                        table.remove(tree1_props_position, idx)
+                        break
+                    end
+                end
+                table.insert(player_items, {"VanillaWood", damage})
 
                 if current_prop_health <= 0 then
                     -- please, future me, figure this out
                     -- UPDATE: i kind of did it
 
                     table.remove(props_hp, props_hp_idx)
-                    local player_items = framework:get_global_system_value("InventoryAddPlayerItems_" .. attacker)
-                    if string.match(current_prop_name, "tree1:") ~= nil then
-                        for idx,prop_name_and_position in pairs(tree1_props_position) do
-                            local prop_name = prop_name_and_position[1]
-                            if prop_name == current_prop_name then
-                                table.remove(tree1_props_position, idx)
-                                break
-                            end
-                        end
-                        table.insert(player_items, {"VanillaWood", 50})
-                    elseif string.match(current_prop_name, "rock1:") ~= nil then
-                        for idx,prop_name_and_position in pairs(rock1_props_position) do
-                            local prop_name = prop_name_and_position[1]
-                            if prop_name == current_prop_name then
-                                table.remove(rock1_props_position, idx)
-                                break
-                            end
-                        end
-                        table.insert(player_items, {"VanillaWood", 50}) -- change this to the rock id later
-                    end
                     delete_prop_by_full_name(current_prop_name)
-                    framework:set_global_system_value("InventoryAddPlayerItems_" .. attacker, player_items)
                     print("the prop is dead")
                 end
+
+                framework:set_global_system_value("InventoryAddPlayerItems_" .. attacker, player_items)
                 break
             end
         end
     end
+
 
     for _, ev in pairs(get_network_events()) do
         if ev["type"] == "ClientConnected" then
@@ -180,7 +173,8 @@ function server_update(framework)
     tick_counter = tick_counter + 1
     framework:set_global_system_value("TileProps_tree1_PropsPosition", tree1_props_position)
     framework:set_global_system_value("TileProps_rock1_PropsPosition", rock1_props_position)
-    framework:set_global_system_value("TileProps_PropsDamage", {})
+    framework:set_global_system_value("TileProps_tree1_Damage", {})
+    framework:set_global_system_value("TileProps_rock1_Damage", {})
     framework:set_global_system_value("TileProps_PropsHP", props_hp)
 end
 
@@ -217,24 +211,31 @@ end
 function spawn_tree1(position)
     local name = "tree1:" .. position[1] .. ";" .. position[2] .. ";" .. position[3]
     new_empty_object(name)
+
+    send_sync_object_message(true, "SpawnTree1", name, position, {0, 0, 0}, {1, 1, 1}, "Everybody")
+
     local object = find_object(name)
     object:add_to_group("attackable")
-    send_sync_object_message(true, "SpawnTree1", name, position, {0, 0, 0}, {1, 1, 1}, "Everybody")
-    print("tree1")
     object:build_object_rigid_body("Fixed", "Cuboid", "None", 0.5, 8, 0.5, 1)
     object:set_position(position[1], position[2], position[3], true)
-    --object:build_object_triangle_mesh_rigid_body("Fixed", "models/test_tile.gltf", "None", 0, 0, 0, 1)
+
+    local properties = {["ParentSystem"] = {"TileProps"}, ["AttackableType"] = {"tree1"}}
+    object:set_object_properties(properties)
 end
 
 function spawn_rock1(position)
     local name = "rock1:" .. position[1] .. ";" .. position[2] .. ";" .. position[3]
     new_empty_object(name)
-    object:add_to_group("attackable")
-    local object = find_object(name)
-    object:build_object_rigid_body("Fixed", "Cuboid", "None", 1, 1, 1, 1)
+
     send_sync_object_message(true, "SpawnRock1", name, position, {0, 0, 0}, {1, 1, 1}, "Everybody")
+
+    local object = find_object(name)
+    object:add_to_group("attackable")
+    object:build_object_rigid_body("Fixed", "Cuboid", "None", 1, 1, 1, 1)
     object:set_position(position[1], position[2], position[3], true)
-    --object:build_object_triangle_mesh_rigid_body("Fixed", "models/test_tile.gltf", "None", 0, 0, 0, 1)
+
+    local properties = {["ParentSystem"] = {"TileProps"}, ["AttackableType"] = {"rock1"}}
+    object:set_object_properties(properties)
 end
 
 function delete_prop(name, position)
