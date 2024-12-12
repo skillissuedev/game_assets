@@ -55,6 +55,7 @@ function server_update(framework)
                 current_prop_health = current_prop_health - damage
                 current_prop_values[2] = current_prop_health
                 local player_items = framework:get_global_system_value("InventoryAddPlayerItems_" .. attacker)
+                local player_xp = framework:get_global_system_value("Experience_PlayerAddXP_" .. attacker)[1]
                 for idx,prop_name_and_position in pairs(tree1_props_position) do
                     local prop_name = prop_name_and_position[1]
                     if prop_name == current_prop_name then -- probably should move everything to a separate function
@@ -62,7 +63,8 @@ function server_update(framework)
                         break
                     end
                 end
-                table.insert(player_items, {"VanillaWood", damage})
+                table.insert(player_items, {"VanillaWood", clamp(damage, 0, 150)})
+                player_xp = player_xp + clamp(damage, 0, 150)
 
                 if current_prop_health <= 0 then
                     -- please, future me, figure this out
@@ -74,6 +76,7 @@ function server_update(framework)
                 end
 
                 framework:set_global_system_value("InventoryAddPlayerItems_" .. attacker, player_items)
+                framework:set_global_system_value("Experience_PlayerAddXP_" .. attacker, {player_xp})
                 break
             end
         end
@@ -247,4 +250,15 @@ end
 function delete_prop_by_full_name(name)
     delete_object(name)
     send_custom_message(true, "DeleteProp", {name}, "Everybody")
+end
+
+function clamp(value, min, max)
+    local result = value
+    if value < min then
+        result = min
+    elseif value > max then
+        result = max
+    end
+
+    return result
 end

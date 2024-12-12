@@ -18,6 +18,8 @@ function client_start(framework)
     framework:new_window("Hotbar", true)
     framework:add_horizontal("Hotbar", "Slots", {500, 50}, nil)
 
+    framework:set_global_system_value("InventoryIsUIOpen", {false})
+
     for i = 1, 10 do
         framework:add_image("Hotbar", "Slot " .. i, "textures/ui/hotbar_slot_" .. i .. ".png", {50, 50}, "Slots")
         framework:set_widget_spacing("Hotbar", "Slot " .. i, 2)
@@ -30,6 +32,8 @@ function client_start(framework)
 end
 
 function client_update(framework)
+    framework:set_global_system_value("InventoryIsUIOpen", {is_showing_inventory})
+
     for slot_idx = 1, 10 do
         if framework:is_bind_pressed("HotbarSlot" .. slot_idx) then
             send_custom_message(true, "SetHotbarSlot", {slot_idx})
